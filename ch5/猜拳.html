@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>APCS h026 猜拳｜Python 教學動畫</title>
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --line:#d8dee9;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --brand:#2563eb;
+      --brand2:#1d4ed8;
+      --good:#16a34a;
+      --bad:#dc2626;
+      --warn:#d97706;
+      --tie:#7c3aed;
+      --code-bg:#0f172a;
+      --code-line:#1e293b;
+      --code-active:#334155;
+      --shadow:0 10px 28px rgba(15,23,42,.10);
+      --radius:16px;
+      --font: "Noto Sans TC", "Microsoft JhengHei", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      --mono: Consolas, "Cascadia Code", "Courier New", monospace;
+    }
+    *{box-sizing:border-box;}
+    html,body{height:100%; margin:0; background:var(--bg); color:var(--text); font-family:var(--font);}
+    body{height:100vh; overflow:hidden; display:flex; flex-direction:column;}
+    button,select,input{font-family:inherit;}
+
+    .topbar{
+      flex:0 0 auto;
+      position:sticky;
+      top:0;
+      z-index:50;
+      background:linear-gradient(135deg,#fff 0%,#eef5ff 100%);
+      border-bottom:1px solid var(--line);
+      box-shadow:0 4px 18px rgba(15,23,42,.08);
+      padding:10px 14px;
+    }
+    .top-row{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+    .brand{display:flex; align-items:center; gap:10px; min-width:250px;}
+    .brand-badge{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,#3b82f6,#22c55e);display:grid;place-items:center;color:white;font-size:23px;box-shadow:var(--shadow);}
+    .brand-title{font-weight:900; font-size:21px; letter-spacing:.5px; color:#0f172a;}
+    .brand-sub{font-size:13px; color:var(--muted); margin-top:2px;}
+    .toolbar{display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex:1;}
+    .btn{
+      border:1px solid #cbd5e1;
+      background:#fff;
+      color:#0f172a;
+      border-radius:12px;
+      padding:9px 12px;
+      font-size:14px;
+      cursor:pointer;
+      box-shadow:0 2px 8px rgba(15,23,42,.06);
+      transition:.15s transform,.15s background,.15s border-color;
+      white-space:nowrap;
+    }
+    .btn:hover{background:#f8fafc; transform:translateY(-1px);}
+    .btn.primary{background:var(--brand); color:#fff; border-color:var(--brand2);}
+    .btn.primary:hover{background:var(--brand2);}
+    .btn.ghost{background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe;}
+    .btn.danger{background:#fff7ed; color:#c2410c; border-color:#fed7aa;}
+    .pill{display:inline-flex; align-items:center; gap:6px; border:1px solid #dbeafe; background:#eff6ff; color:#1e40af; padding:8px 10px; border-radius:999px; font-size:14px; font-weight:800; white-space:nowrap;}
+    .status-box{flex:1 1 300px; min-width:260px; display:grid; grid-template-columns:auto 1fr; gap:6px 8px; align-items:center; font-size:14px;}
+    .status-label{color:var(--muted); font-weight:700; white-space:nowrap;}
+    .status-value{background:#fff; border:1px solid var(--line); border-radius:12px; padding:7px 10px; min-height:34px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+
+    .main{
+      flex:1 1 auto;
+      min-height:0;
+      display:flex;
+      overflow:hidden;
+    }
+    .pane{min-width:0; min-height:0; overflow:auto;}
+    .left-pane{flex:0 0 58%; padding:16px;}
+    .right-pane{flex:1 1 auto; background:#0b1120; color:#e5e7eb; overflow:hidden; display:flex; flex-direction:column;}
+    .divider{flex:0 0 10px; cursor:col-resize; background:linear-gradient(180deg,#dbeafe,#bfdbfe); border-left:1px solid #bfdbfe; border-right:1px solid #bfdbfe; position:relative;}
+    .divider::after{content:"⋮"; position:absolute; inset:0; display:grid; place-items:center; color:#2563eb; font-weight:900; font-size:22px;}
+
+    .stack{display:flex; flex-direction:column; gap:14px; padding-bottom:30px;}
+    .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;}
+    .card-hd{padding:12px 14px; border-bottom:1px solid var(--line); background:#f8fafc; display:flex; justify-content:space-between; gap:10px; align-items:center;}
+    .card-title{font-size:18px; font-weight:900; margin:0; color:#0f172a;}
+    .card-sub{font-size:13px; color:var(--muted);}
+    .card-bd{padding:14px;}
+    .topic-text{font-size:15.5px; line-height:1.75;}
+    .topic-text b{color:#0f172a;}
+    .topic-text code{font-family:var(--mono); background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:1px 5px;}
+    .mini-note{font-size:14px; color:#475569; line-height:1.7;}
+    .hint{border-left:5px solid #60a5fa; background:#eff6ff; padding:10px 12px; border-radius:12px; line-height:1.65; font-size:15px;}
+    .warn{border-left-color:#f59e0b; background:#fff7ed;}
+
+    .sample-grid{display:grid; grid-template-columns:repeat(4,minmax(130px,1fr)); gap:8px;}
+    .sample-btn{border:1px solid #cbd5e1; border-radius:14px; background:#fff; padding:10px; text-align:left; cursor:pointer; font-size:13px; line-height:1.45;}
+    .sample-btn.active{border-color:#2563eb; background:#eff6ff; box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+    .sample-btn strong{display:block; font-size:14px; margin-bottom:3px;}
+    .io-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;}
+    .io-box{background:#0f172a; color:#e5e7eb; border-radius:12px; padding:10px; font-family:var(--mono); font-size:13px; line-height:1.55; overflow:auto; white-space:pre-wrap;}
+    .io-title{font-family:var(--font); color:#bfdbfe; font-size:13px; margin-bottom:6px; font-weight:800;}
+
+    .visual-grid{display:grid; grid-template-columns:1.15fr .85fr; gap:14px; align-items:stretch;}
+    .hero-board{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+    .big-stat{border:1px solid #e2e8f0; background:#f8fafc; border-radius:16px; padding:12px; min-height:112px; display:flex; flex-direction:column; justify-content:space-between; gap:8px;}
+    .big-stat .label{color:var(--muted); font-weight:800; font-size:13px;}
+    .big-stat .value{font-size:24px; font-weight:900; color:#0f172a; line-height:1.2;}
+    .big-stat .small{font-size:13px; color:#475569; line-height:1.4;}
+    .big-stat.active{border-color:#2563eb; background:#eff6ff;}
+    .big-stat.tie{border-color:#a78bfa; background:#f5f3ff;}
+    .big-stat.win{border-color:#86efac; background:#f0fdf4;}
+    .big-stat.lose{border-color:#fecaca; background:#fef2f2;}
+
+    .output-screen{background:#111827; color:#f9fafb; border-radius:16px; padding:12px; min-height:86px; display:flex; flex-direction:column; gap:8px;}
+    .output-screen .label{color:#93c5fd; font-weight:800; font-size:13px;}
+    .output-screen .text{font-family:var(--mono); font-size:18px; line-height:1.4; white-space:pre-wrap; word-break:break-word;}
+
+    .array-wrap{display:flex; flex-wrap:wrap; gap:8px; align-items:stretch;}
+    .move-card{position:relative; min-width:86px; flex:1 0 86px; border:1px solid #e2e8f0; border-radius:15px; padding:10px 8px; background:#fff; text-align:center; transition:.15s;}
+    .move-card .idx{font-size:12px; color:#64748b; font-weight:800;}
+    .move-card .num{font-size:24px; font-weight:900; color:#0f172a; margin:3px 0;}
+    .move-card .name{font-size:13px; color:#475569;}
+    .move-card.current{border-color:#2563eb; background:#eff6ff; box-shadow:0 0 0 3px rgba(37,99,235,.12); transform:translateY(-2px);}
+    .move-card.prev{border-color:#f59e0b; background:#fff7ed;}
+    .move-card.repeat{border-color:#7c3aed; background:#f5f3ff;}
+    .move-card.done{opacity:.62;}
+    .move-card .tag{position:absolute; top:-9px; right:6px; background:#2563eb; color:white; border-radius:999px; font-size:11px; padding:2px 6px; font-weight:900;}
+    .move-card.prev .tag{background:#d97706;}
+    .move-card.repeat .tag{background:#7c3aed;}
+
+    .rule-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+    .rule-card{border:1px solid #e2e8f0; border-radius:15px; padding:12px; background:#fff; display:flex; flex-direction:column; gap:8px;}
+    .rule-card .top{font-size:15px; font-weight:900; color:#0f172a;}
+    .rule-card .bottom{font-size:14px; color:#475569; line-height:1.55;}
+    .dict-code{font-family:var(--mono); font-size:14px; padding:8px 10px; background:#0f172a; color:#e5e7eb; border-radius:12px; overflow:auto;}
+
+    .flow{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
+    .flow-step{border:1px solid #e2e8f0; background:#fff; border-radius:16px; padding:12px; min-height:106px; display:flex; flex-direction:column; gap:7px;}
+    .flow-step .no{width:28px; height:28px; display:grid; place-items:center; border-radius:10px; background:#e2e8f0; font-weight:900;}
+    .flow-step .name{font-weight:900; font-size:15px;}
+    .flow-step .desc{font-size:13.5px; line-height:1.55; color:#475569;}
+    .flow-step.active{border-color:#2563eb; background:#eff6ff; box-shadow:0 0 0 3px rgba(37,99,235,.10);}
+    .flow-step.good{border-color:#86efac; background:#f0fdf4;}
+    .flow-step.bad{border-color:#fecaca; background:#fef2f2;}
+    .flow-step.tie{border-color:#c4b5fd; background:#f5f3ff;}
+
+    .detail-grid{display:grid; grid-template-columns:1.1fr .9fr; gap:14px;}
+    .detail-box{background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:14px; min-height:150px;}
+    .detail-box h4{margin:0 0 8px 0; font-size:16px;}
+    .detail-box p{margin:0; font-size:15.5px; line-height:1.75;}
+    .state-table{width:100%; border-collapse:collapse; font-size:14px; overflow:hidden; border-radius:14px;}
+    .state-table th,.state-table td{border:1px solid #e2e8f0; padding:8px 9px; vertical-align:top;}
+    .state-table th{background:#f1f5f9; text-align:left; color:#475569; width:38%;}
+    .state-table td{background:#fff; font-family:var(--mono);}
+    .chip{display:inline-flex; align-items:center; gap:5px; padding:4px 8px; border-radius:999px; background:#f1f5f9; border:1px solid #e2e8f0; font-weight:800; font-size:13px; white-space:nowrap;}
+    .chip.blue{background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8;}
+    .chip.green{background:#f0fdf4; border-color:#bbf7d0; color:#15803d;}
+    .chip.red{background:#fef2f2; border-color:#fecaca; color:#b91c1c;}
+    .chip.orange{background:#fff7ed; border-color:#fed7aa; color:#c2410c;}
+    .chip.purple{background:#f5f3ff; border-color:#ddd6fe; color:#6d28d9;}
+
+    .right-header{flex:0 0 auto; padding:12px 14px; border-bottom:1px solid #1e293b; background:#111827; display:flex; align-items:center; justify-content:space-between; gap:10px;}
+    .right-title{font-weight:900; color:#f8fafc;}
+    .right-sub{font-size:13px; color:#94a3b8;}
+    .code-scroll{flex:1 1 auto; min-height:0; overflow:auto; padding:10px 0 24px;}
+    .code-line{display:grid; grid-template-columns:48px 1fr; min-height:28px; line-height:28px; font-family:var(--mono); font-size:14px; white-space:pre; border-left:4px solid transparent;}
+    .code-line .ln{user-select:none; text-align:right; padding-right:12px; color:#64748b; background:#0f172a;}
+    .code-line code{display:block; padding:0 16px 0 10px; color:#dbeafe;}
+    .code-line.active{background:#1d4ed8; border-left-color:#93c5fd;}
+    .code-line.active .ln{color:#e0f2fe; background:#1e40af;}
+    .code-line.active code{color:white; font-weight:900;}
+    .code-line.dim code{color:#94a3b8;}
+    .legend{display:flex; flex-wrap:wrap; gap:8px; padding:10px 14px; background:#0f172a; border-top:1px solid #1e293b;}
+    .legend .chip{font-family:var(--font);}
+
+    .modal-backdrop{position:fixed; inset:0; background:rgba(15,23,42,.45); z-index:100; display:none; align-items:center; justify-content:center; padding:20px;}
+    .modal-backdrop.show{display:flex;}
+    .modal{width:min(920px,96vw); max-height:86vh; overflow:auto; background:white; border-radius:20px; box-shadow:0 25px 60px rgba(15,23,42,.35); border:1px solid #e2e8f0;}
+    .modal-hd{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px 18px; border-bottom:1px solid #e2e8f0; background:#f8fafc; position:sticky; top:0;}
+    .modal-title{font-size:20px; font-weight:900; margin:0;}
+    .modal-bd{padding:18px; font-size:15.5px; line-height:1.8;}
+    .modal-bd h3{font-size:18px; margin:16px 0 8px;}
+    .modal-bd ul{margin:8px 0 8px 22px; padding:0;}
+    .modal-bd pre{background:#0f172a; color:#e5e7eb; border-radius:14px; padding:12px; overflow:auto; font-size:13px; line-height:1.55;}
+
+    @media (max-width:980px){
+      body{overflow:auto; height:auto; min-height:100vh;}
+      .main{display:block; overflow:visible;}
+      .left-pane,.right-pane{height:auto; min-height:520px; overflow:visible;}
+      .left-pane{padding:12px;}
+      .divider{display:none;}
+      .visual-grid,.detail-grid,.io-grid{grid-template-columns:1fr;}
+      .sample-grid,.rule-grid,.flow,.hero-board{grid-template-columns:1fr 1fr;}
+      .right-pane{overflow:hidden;}
+      .code-scroll{max-height:620px;}
+    }
+    @media (max-width:620px){
+      .sample-grid,.rule-grid,.flow,.hero-board{grid-template-columns:1fr;}
+      .status-box{grid-template-columns:1fr;}
+      .brand{min-width:unset;}
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="top-row">
+      <div class="brand">
+        <div class="brand-badge">✊</div>
+        <div>
+          <div class="brand-title">APCS h026 猜拳</div>
+          <div class="brand-sub">左邊看變數與流程，右邊看 Python 程式碼</div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <button class="btn ghost" id="openProblemBtn">題目說明</button>
+        <button class="btn" id="prevBtn">上一步</button>
+        <button class="btn" id="nextBtn">下一步</button>
+        <button class="btn primary" id="playBtn">播放</button>
+        <button class="btn danger" id="pauseBtn">暫停</button>
+        <button class="btn" id="resetBtn">重設</button>
+        <span class="pill" id="stepPill">步驟 1 / 1</span>
+        <div class="status-box">
+          <div class="status-label">目前答案 / 狀態</div>
+          <div class="status-value" id="statusValue">尚未開始</div>
+          <div class="status-label">本步驟說明</div>
+          <div class="status-value" id="shortNote">讀取資料</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main" id="mainSplit">
+    <section class="pane left-pane" id="leftPane">
+      <div class="stack">
+        <section class="card">
+          <div class="card-hd">
+            <div>
+              <h2 class="card-title">先抓住這題的一句話</h2>
+              <div class="card-sub">這題不是一直亂猜，是平手時才可能調整下一拳。</div>
+            </div>
+            <span class="chip blue">N ≤ 10</span>
+          </div>
+          <div class="card-bd topic-text">
+            <div class="hint">
+              哥哥每一輪都會先印出自己這次出的拳 <code>F</code>。如果這輪平手，哥哥會觀察妹妹：只要妹妹連續兩拳一樣，哥哥下一拳就改成「能贏妹妹那一拳」的拳。
+            </div>
+            <p style="margin:10px 0 0 0;">
+              出拳編號：<b>0 = 石頭</b>、<b>2 = 剪刀</b>、<b>5 = 布</b>。<br>
+              勝負關係：<b>5 勝 0</b>、<b>0 勝 2</b>、<b>2 勝 5</b>。
+            </p>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-hd">
+            <div>
+              <h2 class="card-title">選擇範例</h2>
+              <div class="card-sub">預設用範例 #4，因為它會完整看到 F 如何改變。</div>
+            </div>
+          </div>
+          <div class="card-bd">
+            <div class="sample-grid" id="sampleButtons"></div>
+            <div class="io-grid">
+              <div class="io-box"><div class="io-title">目前範例輸入</div><div id="sampleInput"></div></div>
+              <div class="io-box"><div class="io-title">正確輸出</div><div id="sampleOutput"></div></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-hd">
+            <div>
+              <h2 class="card-title">目前動畫狀態</h2>
+              <div class="card-sub">看這裡就知道每一步程式正在想什麼。</div>
+            </div>
+            <span class="chip" id="branchChip">準備中</span>
+          </div>
+          <div class="card-bd">
+            <div class="visual-grid">
+              <div>
+                <div class="hero-board" id="heroBoard"></div>
+                <div style="height:10px"></div>
+                <div class="output-screen">
+                  <div class="label">目前輸出畫面</div>
+                  <div class="text" id="outputText">尚未輸出</div>
+                </div>
+              </div>
+              <div class="detail-box">
+                <h4>本步驟白話解釋</h4>
+                <p id="detailText">準備讀入資料。</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-hd">
+            <div>
+              <h2 class="card-title">妹妹出拳陣列 y</h2>
+              <div class="card-sub">i 從 0 開始；第幾輪要看 i + 1。</div>
+            </div>
+          </div>
+          <div class="card-bd">
+            <div class="array-wrap" id="arrayWrap"></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-hd">
+            <div>
+              <h2 class="card-title">win 字典的意思</h2>
+              <div class="card-sub"><code>win[妹妹出的拳]</code> 代表哥哥要出什麼才會贏。</div>
+            </div>
+          </div>
+          <div class="card-bd">
+            <div class="dict-code">win = {0:5, 2:0, 5:2}</div>
+            <div style="height:10px"></div>
+            <div class="rule-grid">
+              <div class="rule-card">
+                <div class="top">win[0] = 5</div>
+                <div class="bottom">妹妹出 <b>0 石頭</b>，哥哥要出 <b>5 布</b> 才能贏。</div>
+              </div>
+              <div class="rule-card">
+                <div class="top">win[2] = 0</div>
+                <div class="bottom">妹妹出 <b>2 剪刀</b>，哥哥要出 <b>0 石頭</b> 才能贏。</div>
+              </div>
+              <div class="rule-card">
+                <div class="top">win[5] = 2</div>
+                <div class="bottom">妹妹出 <b>5 布</b>，哥哥要出 <b>2 剪刀</b> 才能贏。</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-hd">
+            <div>
+              <h2 class="card-title">判斷流程</h2>
+              <div class="card-sub">每一輪都照這個順序做，不要跳著看。</div>
+            </div>
+          </div>
+          <div class="card-bd">
+            <div class="flow" id="flowWrap"></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-hd">
+            <div>
+              <h2 class="card-title">變數狀態表</h2>
+              <div class="card-sub">右邊程式碼跑到哪裡，左邊變數就跟著更新。</div>
+            </div>
+          </div>
+          <div class="card-bd detail-grid">
+            <div class="detail-box">
+              <h4>最容易搞混的地方</h4>
+              <p>
+                <b>先印 F，再判斷輸贏。</b><br>
+                所以輸出中的每個數字，都是哥哥「那一輪實際出的拳」。如果平手後更新 F，那是給下一輪用，不是改掉已經印出的數字。
+              </p>
+            </div>
+            <div>
+              <table class="state-table" id="stateTable"></table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <div class="divider" id="divider" title="拖曳調整左右寬度"></div>
+
+    <aside class="pane right-pane" id="rightPane">
+      <div class="right-header">
+        <div>
+          <div class="right-title">完整 Python 程式碼</div>
+          <div class="right-sub">目前執行到的行會變亮，並自動捲到附近。</div>
+        </div>
+        <span class="chip blue" id="codeLineChip">Line -</span>
+      </div>
+      <div class="code-scroll" id="codeScroll"></div>
+      <div class="legend">
+        <span class="chip blue">藍色：目前行</span>
+        <span class="chip purple">平手：看妹妹是否連兩拳一樣</span>
+        <span class="chip green">哥勝：Won</span>
+        <span class="chip red">哥敗：Lost</span>
+        <span class="chip orange">最後仍平手：Drew</span>
+      </div>
+    </aside>
+  </main>
+
+  <div class="modal-backdrop" id="problemModal">
+    <div class="modal">
+      <div class="modal-hd">
+        <h2 class="modal-title">題目說明：猜拳</h2>
+        <button class="btn" id="closeProblemBtn">關閉</button>
+      </div>
+      <div class="modal-bd">
+        <p>哥哥和妹妹玩猜拳。輸入哥哥一開始要出的拳 <b>F</b>，以及妹妹接下來每一輪會出的拳。</p>
+        <h3>出拳編號</h3>
+        <ul>
+          <li><b>0</b>：石頭</li>
+          <li><b>2</b>：剪刀</li>
+          <li><b>5</b>：布</li>
+        </ul>
+        <h3>勝負規則</h3>
+        <ul>
+          <li>5 勝 0：布贏石頭</li>
+          <li>0 勝 2：石頭贏剪刀</li>
+          <li>2 勝 5：剪刀贏布</li>
+        </ul>
+        <h3>哥哥的策略</h3>
+        <p>如果本輪平手，且妹妹連續兩輪出一樣的拳，哥哥下一輪會改出可以贏妹妹那一拳的拳。</p>
+        <h3>輸出</h3>
+        <p>輸出哥哥每一輪實際出的拳，直到哥哥贏、哥哥輸、或最後一輪仍平手。</p>
+        <pre>Won at round k   代表哥哥第 k 輪獲勝
+Lost at round k  代表哥哥第 k 輪輸掉
+Drew at round N  代表最後仍平手</pre>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const pythonLines = [
+    "F = int(input())                            #哥哥出拳",
+    "N = int(input())                        ",
+    "y = [int(x) for x in input().split()]",
+    "win = {0:5, 2:0, 5:2}                       #5勝0, 0勝2, 2勝5",
+    "",
+    "for i in range(N):",
+    "    print(F, end=' ')                       #哥哥本次出拳  ",
+    "    if(y[i]==F):                            #哥妹平手",
+    "        if(i>0 and y[i]==y[i-1]):           #妹兩拳一樣",
+    "            F = win[y[i]]                   #哥出可贏妹的拳",
+    "        if(i==N-1):                         #最後一拳仍平手,列印平手並跳離",
+    "            print(\": Drew at round %d\" %(i+1))",
+    "            break",
+    "    elif (F == win[y[i]]):                  #哥出可贏妹的拳",
+    "        print(\": Won at round %d\" %(i+1))   #列印哥勝並跳離",
+    "        break",
+    "    else:                                   #哥出輸妹的拳",
+    "        print(\": Lost at round %d\" %(i+1))  #列印妹勝並跳離",
+    "        break"
+  ];
+
+  const samples = [
+    { id:'s1', title:'範例 #1', desc:'第 1 輪哥哥就贏', F:0, N:4, y:[2,5,0,2], expected:'0 : Won at round 1' },
+    { id:'s2', title:'範例 #2', desc:'第 2 輪哥哥輸', F:2, N:2, y:[2,0], expected:'2 2 : Lost at round 2' },
+    { id:'s3', title:'範例 #3', desc:'更新 F 後仍輸', F:5, N:4, y:[5,5,0,0], expected:'5 5 2 : Lost at round 3' },
+    { id:'s4', title:'範例 #4', desc:'一路平手到最後', F:5, N:6, y:[5,5,2,2,0,0], expected:'5 5 2 2 0 0 : Drew at round 6' }
+  ];
+
+  const win = {0:5, 2:0, 5:2};
+  const moveName = {0:'石頭', 2:'剪刀', 5:'布'};
+  const moveEmoji = {0:'🪨', 2:'✂️', 5:'📄'};
+
+  let currentSample = samples[3];
+  let steps = [];
+  let stepIndex = 0;
+  let timer = null;
+  const playDelay = 1100;
+
+  const el = (id)=>document.getElementById(id);
+  const escapeHtml = (s)=>String(s).replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+
+  function moveLabel(v){
+    if(v === null || v === undefined) return '<span class="chip">尚未</span>';
+    return `<span class="chip">${moveEmoji[v]} ${v}=${moveName[v]}</span>`;
+  }
+
+  function outputString(state){
+    const base = state.output.length ? state.output.join(' ') : '';
+    if(state.message) return (base ? base + ' ' : '') + state.message;
+    return base || '尚未輸出';
+  }
+
+  function buildCode(){
+    el('codeScroll').innerHTML = pythonLines.map((line, idx)=>{
+      const n = idx + 1;
+      return `<div class="code-line" data-line="${n}"><span class="ln">${n}</span><code>${escapeHtml(line) || ' '}</code></div>`;
+    }).join('');
+  }
+
+  function buildSteps(sample){
+    const list = [];
+    let F = sample.F;
+    const N = sample.N;
+    const y = sample.y;
+    let output = [];
+    let message = '';
+
+    const state = (extra={}) => ({
+      F,
+      i: extra.i ?? null,
+      roundF: extra.roundF ?? null,
+      yVal: extra.yVal ?? null,
+      prevVal: extra.prevVal ?? null,
+      output:[...output],
+      message,
+      branch: extra.branch ?? '準備',
+      comparison: extra.comparison ?? '',
+      repeated: extra.repeated ?? null,
+      final: extra.final ?? null,
+      fBefore: extra.fBefore ?? F,
+      fAfter: extra.fAfter ?? F,
+      action: extra.action ?? '',
+      result: extra.result ?? ''
+    });
+
+    const push = (lines, short, detail, extra={}) => {
+      const lineArray = Array.isArray(lines) ? lines : [lines];
+      const st = state(extra);
+      list.push({
+        line: lineArray,
+        short,
+        detail,
+        status: extra.status || outputString(st),
+        state: st
+      });
+    };
+
+    push(1, `讀入哥哥一開始的 F = ${sample.F}`, `第一行輸入的是哥哥一開始要出的拳。這個變數叫 F，之後哥哥每一輪要出的拳都看 F。`, {branch:'輸入'});
+    push(2, `讀入 N = ${N}`, `第二行輸入 N，代表妹妹總共準備了 ${N} 輪出拳。for 迴圈等等會跑 range(N)，最多跑 ${N} 次。`, {branch:'輸入'});
+    push(3, `讀入妹妹出拳 y`, `第三行把妹妹每一輪出的拳放進串列 y。現在 y = [${y.join(', ')}]。`, {branch:'輸入'});
+    push(4, `建立 win 字典`, `win 字典是本題核心：win[妹妹出的拳] = 哥哥要出什麼才會贏。例：win[0] = 5，妹妹出石頭，哥哥要出布。`, {branch:'準備'});
+
+    for(let i=0;i<N;i++){
+      const roundF = F;
+      const yi = y[i];
+      const prev = i>0 ? y[i-1] : null;
+
+      push(6, `進入第 ${i+1} 輪`, `i = ${i}，但是人看的輪數是 i + 1，所以現在是第 ${i+1} 輪。哥哥這輪準備出的拳是 F = ${roundF}。`, {i, roundF, yVal:yi, prevVal:prev, branch:'進入迴圈', fBefore:F});
+
+      output.push(String(roundF));
+      push(7, `先印出哥哥這輪的 F = ${roundF}`, `這行很重要：程式先輸出哥哥本輪的拳，才開始判斷輸贏。所以就算後面 F 被更新，也不會改掉剛剛已經印出的 ${roundF}。`, {i, roundF, yVal:yi, prevVal:prev, branch:'先輸出', fBefore:F});
+
+      if(yi === roundF){
+        push(8, `判斷 y[i] == F：平手`, `妹妹這輪 y[${i}] = ${yi}，哥哥這輪 F = ${roundF}，兩個一樣，所以這輪平手。平手不會立刻結束，接著看妹妹是不是連續兩拳一樣。`, {i, roundF, yVal:yi, prevVal:prev, branch:'平手', comparison:'tie', fBefore:F});
+
+        const repeated = i>0 && yi === y[i-1];
+        if(repeated){
+          push(9, `妹妹連兩拳一樣：是`, `因為 i > 0，而且 y[${i}] = ${yi}、y[${i-1}] = ${y[i-1]}，妹妹連續兩輪都出 ${yi}。哥哥要改策略，下一拳改成可以贏 ${yi} 的拳。`, {i, roundF, yVal:yi, prevVal:prev, branch:'平手後觀察', comparison:'tie', repeated:true, fBefore:F});
+          const oldF = F;
+          F = win[yi];
+          push(10, `更新 F：${oldF} → ${F}`, `查字典 win[${yi}] = ${F}。意思是妹妹如果出 ${yi}，哥哥出 ${F} 就能贏。所以 F 被改成 ${F}，這是給下一輪使用。`, {i, roundF, yVal:yi, prevVal:prev, branch:'更新下一拳', comparison:'tie', repeated:true, fBefore:oldF, fAfter:F});
+        }else{
+          const reason = i===0 ? `i = 0，還沒有前一拳可以比。` : `y[${i}] = ${yi}，前一拳 y[${i-1}] = ${y[i-1]}，兩拳不一樣。`;
+          push(9, `妹妹連兩拳一樣：否`, `${reason} 所以 F 不更新，下一輪還是用目前的 F = ${F}。`, {i, roundF, yVal:yi, prevVal:prev, branch:'平手後觀察', comparison:'tie', repeated:false, fBefore:F});
+        }
+
+        const finalRound = i === N-1;
+        push(11, finalRound ? `這是最後一輪` : `還不是最後一輪`, finalRound ? `i == N - 1 成立，代表已經來到最後一輪，而且仍然平手，所以要輸出 Drew。` : `i == N - 1 不成立，代表還有下一輪，所以這一輪只是平手，繼續跑下一圈 for。`, {i, roundF, yVal:yi, prevVal:prev, branch:'檢查最後', comparison:'tie', repeated, final:finalRound, fBefore:F});
+
+        if(finalRound){
+          message = `: Drew at round ${i+1}`;
+          push(12, `印出 Drew at round ${i+1}`, `最後一輪還是平手，所以輸出「Drew at round ${i+1}」。注意前面已經先印過每一輪哥哥出的拳。`, {i, roundF, yVal:yi, prevVal:prev, branch:'最後平手', comparison:'draw', repeated, final:true, result:'draw', fBefore:F});
+          push(13, `break，遊戲結束`, `已經知道結果是平手，使用 break 跳出 for 迴圈，不再做任何事。`, {i, roundF, yVal:yi, prevVal:prev, branch:'結束', comparison:'draw', repeated, final:true, result:'draw', fBefore:F});
+          break;
+        }
+      }else{
+        push(8, `判斷 y[i] == F：不是平手`, `妹妹 y[${i}] = ${yi}，哥哥 F = ${roundF}，兩個不同，所以不是平手。接著進入 elif，判斷哥哥是不是贏。`, {i, roundF, yVal:yi, prevVal:prev, branch:'非平手', comparison:'notTie', fBefore:F});
+        const brotherWins = roundF === win[yi];
+        if(brotherWins){
+          push(14, `判斷 F == win[y[i]]：哥哥贏`, `win[${yi}] = ${win[yi]}，而哥哥這輪 F = ${roundF}，兩者相同，代表哥哥出的拳剛好可以贏妹妹。`, {i, roundF, yVal:yi, prevVal:prev, branch:'哥哥獲勝', comparison:'win', result:'win', fBefore:F});
+          message = `: Won at round ${i+1}`;
+          push(15, `印出 Won at round ${i+1}`, `哥哥在第 ${i+1} 輪獲勝，所以輸出「Won at round ${i+1}」。`, {i, roundF, yVal:yi, prevVal:prev, branch:'哥哥獲勝', comparison:'win', result:'win', fBefore:F});
+          push(16, `break，遊戲結束`, `已經分出勝負，所以直接跳出迴圈。`, {i, roundF, yVal:yi, prevVal:prev, branch:'結束', comparison:'win', result:'win', fBefore:F});
+          break;
+        }else{
+          push(14, `判斷 F == win[y[i]]：不是哥哥贏`, `win[${yi}] = ${win[yi]}，但哥哥這輪 F = ${roundF}。哥哥沒有出到能贏妹妹的拳，所以會進入 else，代表哥哥輸。`, {i, roundF, yVal:yi, prevVal:prev, branch:'哥哥未贏', comparison:'lose', result:'lose', fBefore:F});
+          push(17, `進入 else：哥哥輸`, `不是平手，也不是哥哥贏，那只剩一種情況：哥哥輸給妹妹。`, {i, roundF, yVal:yi, prevVal:prev, branch:'哥哥輸', comparison:'lose', result:'lose', fBefore:F});
+          message = `: Lost at round ${i+1}`;
+          push(18, `印出 Lost at round ${i+1}`, `哥哥在第 ${i+1} 輪輸掉，所以輸出「Lost at round ${i+1}」。`, {i, roundF, yVal:yi, prevVal:prev, branch:'哥哥輸', comparison:'lose', result:'lose', fBefore:F});
+          push(19, `break，遊戲結束`, `已經分出勝負，所以直接跳出迴圈。`, {i, roundF, yVal:yi, prevVal:prev, branch:'結束', comparison:'lose', result:'lose', fBefore:F});
+          break;
+        }
+      }
+    }
+    return list;
+  }
+
+  function renderSamples(){
+    const wrap = el('sampleButtons');
+    wrap.innerHTML = samples.map(s=>`
+      <button class="sample-btn ${s.id===currentSample.id?'active':''}" data-sample="${s.id}">
+        <strong>${s.title}</strong>
+        <span>${s.desc}</span><br>
+        <span class="card-sub">F=${s.F}, N=${s.N}</span>
+      </button>
+    `).join('');
+    wrap.querySelectorAll('button').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const id = btn.dataset.sample;
+        currentSample = samples.find(s=>s.id===id);
+        resetSteps();
+      });
+    });
+    el('sampleInput').textContent = `${currentSample.F}\n${currentSample.N}\n${currentSample.y.join(' ')}`;
+    el('sampleOutput').textContent = currentSample.expected;
+  }
+
+  function branchClass(state){
+    if(state.result === 'win' || state.comparison === 'win') return 'green';
+    if(state.result === 'lose' || state.comparison === 'lose') return 'red';
+    if(state.result === 'draw' || state.comparison === 'draw') return 'orange';
+    if(state.comparison === 'tie') return 'purple';
+    if(state.comparison === 'notTie') return 'blue';
+    return 'blue';
+  }
+
+  function branchText(state){
+    if(state.result === 'win') return '結果：哥哥贏';
+    if(state.result === 'lose') return '結果：哥哥輸';
+    if(state.result === 'draw') return '結果：平手';
+    if(state.comparison === 'tie') return '本輪平手';
+    if(state.comparison === 'notTie') return '本輪非平手';
+    return state.branch || '準備中';
+  }
+
+  function renderHero(state){
+    const roundText = state.i === null ? '尚未進入迴圈' : `第 ${state.i+1} 輪 / i=${state.i}`;
+    const yText = state.yVal === null ? '尚未' : `${moveEmoji[state.yVal]} ${state.yVal}`;
+    const fText = `${moveEmoji[state.F]} ${state.F}`;
+    const roundFText = state.roundF === null ? '尚未' : `${moveEmoji[state.roundF]} ${state.roundF}`;
+    const klass = state.result === 'win' ? 'win' : state.result === 'lose' ? 'lose' : (state.comparison === 'tie' || state.result === 'draw') ? 'tie' : 'active';
+    el('heroBoard').innerHTML = `
+      <div class="big-stat ${klass}">
+        <div class="label">目前輪數</div>
+        <div class="value">${roundText}</div>
+        <div class="small">程式的 i 從 0 開始</div>
+      </div>
+      <div class="big-stat ${klass}">
+        <div class="label">F 變數目前值</div>
+        <div class="value">${fText}</div>
+        <div class="small">這是哥哥下一次會用的拳</div>
+      </div>
+      <div class="big-stat ${klass}">
+        <div class="label">本輪已印出的哥哥拳</div>
+        <div class="value">${roundFText}</div>
+        <div class="small">第 7 行先 print(F)</div>
+      </div>
+      <div class="big-stat">
+        <div class="label">妹妹這輪 y[i]</div>
+        <div class="value">${yText}</div>
+        <div class="small">${state.i===null?'尚未讀到某一輪':`y[${state.i}]`}</div>
+      </div>
+      <div class="big-stat">
+        <div class="label">妹妹前一輪 y[i-1]</div>
+        <div class="value">${state.prevVal===null?'沒有':`${moveEmoji[state.prevVal]} ${state.prevVal}`}</div>
+        <div class="small">用來檢查是否連兩拳一樣</div>
+      </div>
+      <div class="big-stat ${klass}">
+        <div class="label">判斷狀態</div>
+        <div class="value" style="font-size:20px">${branchText(state)}</div>
+        <div class="small">${state.repeated===true?'妹妹連兩拳一樣':state.repeated===false?'妹妹沒有連兩拳一樣':'依目前程式行判斷'}</div>
+      </div>
+    `;
+  }
+
+  function renderArray(state){
+    el('arrayWrap').innerHTML = currentSample.y.map((v, idx)=>{
+      const isCurrent = idx === state.i;
+      const isPrev = idx === state.i-1;
+      const isDone = state.i !== null && idx < state.i;
+      const isRepeat = state.repeated === true && (idx === state.i || idx === state.i-1);
+      const classes = ['move-card'];
+      if(isCurrent) classes.push('current');
+      if(isPrev) classes.push('prev');
+      if(isDone) classes.push('done');
+      if(isRepeat) classes.push('repeat');
+      let tag = '';
+      if(isCurrent) tag = '<span class="tag">目前</span>';
+      else if(isPrev) tag = '<span class="tag">前一拳</span>';
+      return `<div class="${classes.join(' ')}">
+        ${tag}
+        <div class="idx">index ${idx}<br>第 ${idx+1} 輪</div>
+        <div class="num">${v}</div>
+        <div class="name">${moveEmoji[v]} ${moveName[v]}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderFlow(step){
+    const lineSet = new Set(step.line);
+    const st = step.state;
+    const flow = [
+      {no:1,name:'先印 F',desc:'第 7 行先輸出哥哥本輪出的拳。',active:lineSet.has(7)},
+      {no:2,name:'看是否平手',desc:'第 8 行檢查 y[i] 是否等於 F。',active:lineSet.has(8), cls:st.comparison==='tie'?'tie':''},
+      {no:3,name:'平手才看連續',desc:'第 9～10 行：妹妹連兩拳一樣，才更新 F。',active:lineSet.has(9)||lineSet.has(10), cls:'tie'},
+      {no:4,name:'輸贏或最後平手',desc:'第 11～19 行：Drew、Won、Lost 都會 break。',active:[...lineSet].some(x=>[11,12,13,14,15,16,17,18,19].includes(x)), cls:st.result==='win'?'good':st.result==='lose'?'bad':st.result==='draw'?'tie':''}
+    ];
+    el('flowWrap').innerHTML = flow.map(f=>`
+      <div class="flow-step ${f.active?'active':''} ${f.cls||''}">
+        <div class="no">${f.no}</div>
+        <div class="name">${f.name}</div>
+        <div class="desc">${f.desc}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderStateTable(state){
+    const rows = [
+      ['F', `${state.F} ${moveName[state.F] || ''}`, '哥哥下一次準備出的拳'],
+      ['i', state.i===null ? '-' : String(state.i), '程式用的索引，從 0 開始'],
+      ['round', state.i===null ? '-' : String(state.i+1), '人看的第幾輪 = i + 1'],
+      ['y[i]', state.yVal===null ? '-' : `${state.yVal} ${moveName[state.yVal]}`, '妹妹本輪出的拳'],
+      ['y[i-1]', state.prevVal===null ? '-' : `${state.prevVal} ${moveName[state.prevVal]}`, '妹妹前一輪出的拳'],
+      ['win[y[i]]', state.yVal===null ? '-' : `${win[state.yVal]} ${moveName[win[state.yVal]]}`, '哥哥要出這個才會贏妹妹 y[i]'],
+      ['目前輸出', outputString(state), '已經印到畫面上的內容']
+    ];
+    el('stateTable').innerHTML = rows.map(r=>`<tr><th>${r[0]}<div class="card-sub">${r[2]}</div></th><td>${escapeHtml(r[1])}</td></tr>`).join('');
+  }
+
+  function renderCode(lines){
+    document.querySelectorAll('.code-line').forEach(node=>node.classList.remove('active'));
+    lines.forEach(n=>{
+      const node = document.querySelector(`.code-line[data-line="${n}"]`);
+      if(node) node.classList.add('active');
+    });
+    el('codeLineChip').textContent = `Line ${lines.join(', ')}`;
+    const first = document.querySelector(`.code-line[data-line="${lines[0]}"]`);
+    if(first){
+      const scroller = el('codeScroll');
+      const r = first.getBoundingClientRect();
+      const sr = scroller.getBoundingClientRect();
+      if(r.top < sr.top + 70 || r.bottom > sr.bottom - 70){
+        scroller.scrollTop += (r.top - sr.top) - scroller.clientHeight/2 + 80;
+      }
+    }
+  }
+
+  function render(){
+    const step = steps[stepIndex];
+    if(!step) return;
+    const state = step.state;
+    el('stepPill').textContent = `步驟 ${stepIndex+1} / ${steps.length}`;
+    el('statusValue').textContent = outputString(state);
+    el('shortNote').textContent = step.short;
+    el('detailText').textContent = step.detail;
+    el('outputText').textContent = outputString(state);
+    const bc = branchClass(state);
+    el('branchChip').className = `chip ${bc}`;
+    el('branchChip').textContent = branchText(state);
+    renderSamples();
+    renderHero(state);
+    renderArray(state);
+    renderFlow(step);
+    renderStateTable(state);
+    renderCode(step.line);
+  }
+
+  function resetSteps(){
+    pause();
+    steps = buildSteps(currentSample);
+    stepIndex = 0;
+    render();
+  }
+  function nextStep(){
+    if(stepIndex < steps.length-1){ stepIndex++; render(); }
+    else pause();
+  }
+  function prevStep(){
+    if(stepIndex > 0){ stepIndex--; render(); }
+  }
+  function play(){
+    pause();
+    timer = setInterval(nextStep, playDelay);
+  }
+  function pause(){
+    if(timer){ clearInterval(timer); timer = null; }
+  }
+
+  function setupDivider(){
+    const divider = el('divider');
+    const main = el('mainSplit');
+    const left = el('leftPane');
+    let dragging = false;
+    divider.addEventListener('pointerdown', (e)=>{
+      dragging = true;
+      divider.setPointerCapture(e.pointerId);
+      document.body.style.userSelect = 'none';
+    });
+    divider.addEventListener('pointermove', (e)=>{
+      if(!dragging) return;
+      const rect = main.getBoundingClientRect();
+      let pct = (e.clientX - rect.left) / rect.width * 100;
+      pct = Math.max(32, Math.min(72, pct));
+      left.style.flexBasis = pct + '%';
+    });
+    const stop = ()=>{dragging=false; document.body.style.userSelect='';};
+    divider.addEventListener('pointerup', stop);
+    divider.addEventListener('pointercancel', stop);
+  }
+
+  function setupEvents(){
+    el('prevBtn').addEventListener('click', prevStep);
+    el('nextBtn').addEventListener('click', nextStep);
+    el('playBtn').addEventListener('click', play);
+    el('pauseBtn').addEventListener('click', pause);
+    el('resetBtn').addEventListener('click', resetSteps);
+    el('openProblemBtn').addEventListener('click', ()=>el('problemModal').classList.add('show'));
+    el('closeProblemBtn').addEventListener('click', ()=>el('problemModal').classList.remove('show'));
+    el('problemModal').addEventListener('click', (e)=>{ if(e.target.id==='problemModal') el('problemModal').classList.remove('show'); });
+    window.addEventListener('keydown', (e)=>{
+      if(e.key==='ArrowRight') nextStep();
+      if(e.key==='ArrowLeft') prevStep();
+      if(e.key===' ') { e.preventDefault(); timer ? pause() : play(); }
+      if(e.key==='Escape') el('problemModal').classList.remove('show');
+    });
+  }
+
+  buildCode();
+  setupDivider();
+  setupEvents();
+  resetSteps();
+</script>
+</body>
+</html>

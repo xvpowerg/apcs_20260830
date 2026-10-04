@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>G595 修補圍籬｜一步一步動畫</title>
+  <style>
+    :root {
+      --toolbar-h: 124px;
+      --left-width: 56%;
+      --bg: #f6f7fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #d7dce5;
+      --primary: #2563eb;
+      --primary-soft: #dbeafe;
+      --yellow-soft: #fef3c7;
+      --green-soft: #dcfce7;
+      --red-soft: #ffe4e6;
+      --orange-soft: #ffedd5;
+      --code-bg: #111827;
+      --code-text: #e5e7eb;
+      --code-line: #1f2937;
+      --code-active: #374151;
+      --shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      font-size: 16px;
+      line-height: 1.5;
+      overflow: hidden;
+    }
+
+    button, select {
+      font-family: inherit;
+      font-size: 16px;
+    }
+
+    .toolbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      background: rgba(255, 255, 255, 0.97);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toolbarTop,
+    .toolbarBottom {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .title {
+      font-size: 20px;
+      font-weight: 800;
+      margin-right: 10px;
+      white-space: nowrap;
+    }
+
+    .btn {
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 7px 12px;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+
+    .btn:hover { background: #f3f4f6; }
+    .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .btn.primary:hover { background: #1d4ed8; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #f3f4f6;
+      border: 1px solid var(--border);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge.answer {
+      background: var(--green-soft);
+      border-color: #86efac;
+    }
+
+    .messageBar {
+      flex: 1;
+      min-width: 280px;
+      padding: 8px 12px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #1e3a8a;
+    }
+
+    .main {
+      margin-top: var(--toolbar-h);
+      height: calc(100vh - var(--toolbar-h));
+      display: flex;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .leftPanel,
+    .rightPanel {
+      min-height: 0;
+      overflow: auto;
+    }
+
+    .leftPanel {
+      width: var(--left-width);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .rightPanel {
+      flex: 1;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .divider {
+      width: 9px;
+      cursor: col-resize;
+      background: linear-gradient(90deg, #e5e7eb, #cbd5e1, #e5e7eb);
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      flex: 0 0 9px;
+    }
+
+    .divider:hover { background: #bfdbfe; }
+
+    .card {
+      position: relative;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+      overflow: visible;
+    }
+
+    .cardTitle {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .subtle { color: var(--muted); font-size: 15px; }
+
+    .rulesGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .ruleItem {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #f9fafb;
+      padding: 10px;
+      min-height: 76px;
+    }
+
+    .ruleItem strong {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .visualCard {
+      min-height: 300px;
+      overflow: hidden;
+    }
+
+    .svgBox {
+      width: 100%;
+      height: 260px;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      background: #fbfdff;
+      overflow: hidden;
+    }
+
+    #fenceSvg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .decisionBox {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr);
+      gap: 12px;
+    }
+
+    .infoBlock {
+      border: 1px solid var(--border);
+      background: #f9fafb;
+      border-radius: 12px;
+      padding: 12px;
+      min-height: 90px;
+    }
+
+    .infoBlock h3 {
+      margin: 0 0 8px 0;
+      font-size: 17px;
+    }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      gap: 7px 10px;
+      align-items: center;
+      font-size: 16px;
+    }
+
+    .kv .key { color: var(--muted); font-weight: 700; }
+    .kv .val { font-weight: 800; }
+
+    .questionList {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .qRow {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #fff;
+    }
+
+    .qRow.active { background: var(--yellow-soft); border-color: #f59e0b; }
+    .qRow.doneYes { background: var(--green-soft); border-color: #86efac; }
+    .qRow.doneNo { background: #f3f4f6; border-color: #d1d5db; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 52px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-weight: 800;
+      border: 1px solid var(--border);
+      background: #fff;
+    }
+
+    .pill.yes { background: var(--green-soft); border-color: #86efac; color: #166534; }
+    .pill.no { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+    .pill.wait { background: #f3f4f6; color: #4b5563; }
+    .pill.pick { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+
+    .calcLine {
+      font-size: 18px;
+      font-weight: 800;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #7c2d12;
+      margin-top: 10px;
+    }
+
+    .recordWrap {
+      max-height: 220px;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 16px;
+      background: #fff;
+    }
+
+    th, td {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 9px 10px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: #f3f4f6;
+      z-index: 1;
+      font-weight: 800;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    .codeCard {
+      height: 100%;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .codeHeader {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      background: #ffffff;
+      font-weight: 800;
+      font-size: 18px;
+      flex: 0 0 auto;
+    }
+
+    .codeBox {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      background: var(--code-bg);
+      padding: 12px 0;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    .codeLine {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 10px;
+      padding: 2px 14px 2px 0;
+      color: var(--code-text);
+      white-space: pre;
+      min-height: 26px;
+      border-left: 5px solid transparent;
+    }
+
+    .codeLine .ln {
+      color: #9ca3af;
+      text-align: right;
+      user-select: none;
+    }
+
+    .codeLine.active {
+      background: var(--code-active);
+      border-left-color: #fbbf24;
+    }
+
+    .codeLine.active .ln { color: #fde68a; font-weight: 800; }
+
+    .emptyText {
+      padding: 12px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .modalBackdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      z-index: 50;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modalBackdrop.show { display: flex; }
+
+    .modal {
+      width: min(900px, 96vw);
+      max-height: 70vh;
+      overflow: auto;
+      background: #fff;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+      padding: 18px;
+    }
+
+    .modalHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .modal h2 {
+      font-size: 20px;
+      margin: 0;
+    }
+
+    .modal p, .modal li {
+      font-size: 16px;
+      line-height: 1.65;
+    }
+
+    .sampleInput {
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-family: Consolas, "Courier New", monospace;
+      white-space: pre-wrap;
+    }
+
+    @media (max-width: 980px) {
+      html, body { overflow: auto; }
+      .main {
+        height: auto;
+        min-height: calc(100vh - var(--toolbar-h));
+        flex-direction: column;
+        overflow: visible;
+      }
+      .leftPanel, .rightPanel { width: 100%; overflow: visible; }
+      .divider { display: none; }
+      .codeCard { min-height: 560px; }
+      .decisionBox, .rulesGrid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header id="toolbar" class="toolbar">
+    <div class="toolbarTop">
+      <div class="title">G595 修補圍籬｜一步一步動畫</div>
+      <button class="btn" id="prevBtn">上一步</button>
+      <button class="btn primary" id="nextBtn">下一步</button>
+      <button class="btn" id="playBtn">播放</button>
+      <button class="btn" id="resetBtn">重設</button>
+      <button class="btn" id="topicBtn">題目說明</button>
+      <select id="sampleSelect" class="btn" title="切換範例"></select>
+    </div>
+    <div class="toolbarBottom">
+      <span class="badge" id="stepBadge">步驟 1 / 1</span>
+      <span class="badge answer" id="answerBadge">cost = 0</span>
+      <div class="messageBar" id="messageBar">準備開始。</div>
+    </div>
+  </header>
+
+  <main class="main" id="main">
+    <section class="leftPanel" id="leftPanel">
+      <section class="card">
+        <div class="cardTitle">規則先看懂</div>
+        <div class="rulesGrid">
+          <div class="ruleItem">
+            <strong>1. 先看 h[i]</strong>
+            h[i] 不是 0：這格沒壞，直接跳過。
+          </div>
+          <div class="ruleItem">
+            <strong>2. i == 0</strong>
+            i 是 0：代表最左邊，只能看右邊。
+          </div>
+          <div class="ruleItem">
+            <strong>3. i == n - 1</strong>
+            n - 1 是最後一格位置；i 等於它，代表最右邊。
+          </div>
+          <div class="ruleItem">
+            <strong>4. 都不是才是中間</strong>
+            不是最左，也不是最右，才看左右兩邊選小的。
+          </div>
+        </div>
+      </section>
+
+      <section class="card visualCard">
+        <div class="cardTitle">圍籬位置尺與目前箭頭</div>
+        <div class="subtle">上排是 index，下排是高度。箭頭指到目前 for 迴圈的 i。</div>
+        <div class="svgBox" id="svgBox">
+          <svg id="fenceSvg" viewBox="0 0 800 240" preserveAspectRatio="xMidYMid meet" role="img" aria-label="圍籬視覺化"></svg>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="cardTitle">本次判斷：程式怎麼知道左、右、中？</div>
+        <div class="decisionBox">
+          <div class="infoBlock">
+            <h3>目前位置</h3>
+            <div class="kv" id="positionInfo"></div>
+          </div>
+          <div class="infoBlock">
+            <h3>問題一步一步問</h3>
+            <div class="questionList" id="questionList"></div>
+          </div>
+        </div>
+        <div class="calcLine" id="calcLine">尚未開始計算。</div>
+      </section>
+
+      <section class="card">
+        <div class="cardTitle">修補紀錄</div>
+        <div class="recordWrap" id="recordWrap"></div>
+      </section>
+    </section>
+
+    <div class="divider" id="divider" title="拖曳調整左右寬度"></div>
+
+    <section class="rightPanel">
+      <section class="card codeCard">
+        <div class="codeHeader">完整 Python 程式碼</div>
+        <div class="codeBox" id="codeBox"></div>
+      </section>
+    </section>
+  </main>
+
+  <div class="modalBackdrop" id="modalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modalHeader">
+        <h2 id="modalTitle">題目說明：修補圍籬</h2>
+        <button class="btn" id="closeModalBtn">關閉</button>
+      </div>
+      <p>有一排圍籬，每一格有高度。高度是 0 代表這格被風吹斷，需要修補。</p>
+      <p>修補成本依照位置決定：</p>
+      <ul>
+        <li>壞在最左邊：只能參考右邊那格高度。</li>
+        <li>壞在最右邊：只能參考左邊那格高度。</li>
+        <li>壞在中間：比較左邊和右邊，選比較小的高度當成本。</li>
+      </ul>
+      <p>本動畫重點不是背公式，而是看懂程式如何用 i、0、n - 1 判斷位置。</p>
+      <div class="sampleInput" id="modalSampleText"></div>
+    </div>
+  </div>
+
+  <script>
+    const codeLines = [
+      'n = int(input())                    # 圍籬寬度 n',
+      'h = list(map(int, input().split())) # 各圍籬高度',
+      '',
+      'cost = 0',
+      '',
+      'for i in range(n):',
+      '    if h[i] == 0:                   # 這格圍籬被吹斷了',
+      '        if i == 0:                  # 壞在最左邊',
+      '            cost += h[1]            # 只能參考右邊',
+      '        elif i == n - 1:            # 壞在最右邊',
+      '            cost += h[n - 2]        # 只能參考左邊',
+      '        else:                       # 壞在中間',
+      '            cost += min(h[i - 1], h[i + 1])  # 左右選比較小的',
+      '',
+      'print(cost)'
+    ];
+
+    const examples = [
+      { name: '範例 A：含左、中、右', n: 9, h: [0, 5, 3, 0, 6, 4, 0, 1, 0] },
+      { name: '範例 B：右邊界', n: 5, h: [1, 0, 2, 3, 0] },
+      { name: '範例 C：多個中間', n: 7, h: [2, 0, 5, 0, 4, 0, 3] }
+    ];
+
+    let currentExampleIndex = 0;
+    let steps = [];
+    let stepIndex = 0;
+    let timer = null;
+
+    const toolbar = document.getElementById('toolbar');
+    const main = document.getElementById('main');
+    const leftPanel = document.getElementById('leftPanel');
+    const divider = document.getElementById('divider');
+    const codeBox = document.getElementById('codeBox');
+    const fenceSvg = document.getElementById('fenceSvg');
+    const messageBar = document.getElementById('messageBar');
+    const stepBadge = document.getElementById('stepBadge');
+    const answerBadge = document.getElementById('answerBadge');
+    const positionInfo = document.getElementById('positionInfo');
+    const questionList = document.getElementById('questionList');
+    const calcLine = document.getElementById('calcLine');
+    const recordWrap = document.getElementById('recordWrap');
+    const sampleSelect = document.getElementById('sampleSelect');
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const modalSampleText = document.getElementById('modalSampleText');
+
+    function escapeHtml(s) {
+      return String(s)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function syncToolbarHeight() {
+      const h = Math.ceil(toolbar.getBoundingClientRect().height);
+      document.documentElement.style.setProperty('--toolbar-h', h + 'px');
+    }
+
+    function renderCode() {
+      codeBox.innerHTML = codeLines.map((line, idx) => {
+        const lineNo = idx + 1;
+        return `<div class="codeLine" data-line="${lineNo}"><span class="ln">${lineNo}</span><span>${escapeHtml(line)}</span></div>`;
+      }).join('');
+    }
+
+    function setupSampleSelect() {
+      sampleSelect.innerHTML = examples.map((ex, idx) => `<option value="${idx}">${escapeHtml(ex.name)}</option>`).join('');
+      sampleSelect.value = String(currentExampleIndex);
+    }
+
+    function cloneRecords(records) {
+      return records.map(r => ({ ...r }));
+    }
+
+    function makeStep(base) {
+      return {
+        activeLine: 1,
+        message: '',
+        result: '',
+        i: null,
+        cost: 0,
+        oldCost: null,
+        addValue: null,
+        selectedIndex: null,
+        leftIndex: null,
+        rightIndex: null,
+        questions: [],
+        calc: '',
+        records: [],
+        ...base
+      };
+    }
+
+    function buildSteps(ex) {
+      const n = ex.n;
+      const h = ex.h;
+      const last = n - 1;
+      let cost = 0;
+      let records = [];
+      const s = [];
+
+      s.push(makeStep({
+        activeLine: 1,
+        message: `讀入 n。這一排共有 ${n} 格圍籬。`,
+        result: `n = ${n}`,
+        calc: `n = ${n}，所以 for 會讓 i 從 0 走到 ${last}。`
+      }));
+
+      s.push(makeStep({
+        activeLine: 2,
+        message: '讀入每一格圍籬高度，放進 list h。',
+        result: `h = [${h.join(', ')}]`,
+        calc: `Python list 從 0 開始編號，所以第一格是 h[0]，最後一格是 h[${last}]。`
+      }));
+
+      s.push(makeStep({
+        activeLine: 4,
+        message: 'cost 先設成 0，等一下看到壞掉的 0 才會加成本。',
+        result: 'cost = 0',
+        cost,
+        calc: '目前還沒修任何圍籬，所以 cost = 0。'
+      }));
+
+      for (let i = 0; i < n; i++) {
+        s.push(makeStep({
+          activeLine: 6,
+          message: `for 迴圈走到 i = ${i}，箭頭指到 h[${i}]。`,
+          result: `i = ${i}，cost = ${cost}`,
+          i, cost,
+          records: cloneRecords(records),
+          calc: `現在檢查第 ${i + 1} 格，也就是 h[${i}]。`
+        }));
+
+        const isBroken = h[i] === 0;
+        s.push(makeStep({
+          activeLine: 7,
+          message: isBroken
+            ? `h[${i}] = 0，這格壞掉了，要繼續判斷位置。`
+            : `h[${i}] = ${h[i]}，不是 0，代表沒壞，這一格跳過。`,
+          result: `h[${i}] = ${h[i]}，cost = ${cost}`,
+          i, cost,
+          records: cloneRecords(records),
+          questions: [
+            { text: `h[${i}] == 0 嗎？`, answer: isBroken ? '是' : '不是', state: isBroken ? 'doneYes' : 'doneNo' }
+          ],
+          calc: isBroken
+            ? `第 ${i + 1} 格是 0，要修。先不要直接說中間，要先問 i 是不是邊界。`
+            : `不是 0，沒有壞，不需要看左邊或右邊。`
+        }));
+
+        if (!isBroken) continue;
+
+        const isLeft = i === 0;
+        s.push(makeStep({
+          activeLine: 8,
+          message: isLeft
+            ? `檢查 i == 0。${i} == 0，所以這格在最左邊。`
+            : `檢查 i == 0。${i} != 0，所以不是最左邊。`,
+          result: `i = ${i}，cost = ${cost}`,
+          i, cost,
+          records: cloneRecords(records),
+          questions: [
+            { text: `h[${i}] == 0 嗎？`, answer: '是', state: 'doneYes' },
+            { text: `i == 0 嗎？`, answer: isLeft ? '是' : '不是', state: isLeft ? 'doneYes' : 'doneNo' }
+          ],
+          calc: isLeft
+            ? `i = 0 就是 list 的第一個位置。左邊沒有圍籬，所以只能看右邊 h[1] = ${h[1]}。`
+            : `i 不是 0，表示它不是第一格，還要繼續問是不是最後一格。`
+        }));
+
+        if (isLeft) {
+          const add = h[1];
+          const oldCost = cost;
+          cost += add;
+          records.push({ pos: i + 1, i, left: '無', right: h[1], rule: '最左邊，看右邊', pick: add, cost });
+          s.push(makeStep({
+            activeLine: 9,
+            message: `最左邊只能參考右邊，所以 cost 加 h[1] = ${add}。`,
+            result: `cost = ${cost}`,
+            i, cost, oldCost, addValue: add,
+            rightIndex: 1,
+            selectedIndex: 1,
+            records: cloneRecords(records),
+            questions: [
+              { text: `h[${i}] == 0 嗎？`, answer: '是', state: 'doneYes' },
+              { text: `i == 0 嗎？`, answer: '是', state: 'doneYes' }
+            ],
+            calc: `cost = ${oldCost} + h[1] = ${oldCost} + ${add} = ${cost}`
+          }));
+          continue;
+        }
+
+        const isRight = i === last;
+        s.push(makeStep({
+          activeLine: 10,
+          message: isRight
+            ? `檢查 i == n - 1。n - 1 = ${last}，${i} == ${last}，所以是最右邊。`
+            : `檢查 i == n - 1。n - 1 = ${last}，${i} != ${last}，所以不是最右邊。`,
+          result: `i = ${i}，cost = ${cost}`,
+          i, cost,
+          records: cloneRecords(records),
+          questions: [
+            { text: `h[${i}] == 0 嗎？`, answer: '是', state: 'doneYes' },
+            { text: `i == 0 嗎？`, answer: '不是', state: 'doneNo' },
+            { text: `i == n - 1 嗎？`, answer: isRight ? '是' : '不是', state: isRight ? 'doneYes' : 'doneNo' }
+          ],
+          calc: isRight
+            ? `n = ${n}，最後一格位置是 n - 1 = ${last}。目前 i 也等於 ${last}，所以只能看左邊 h[${n - 2}] = ${h[n - 2]}。`
+            : `目前 i = ${i}，最後位置是 ${last}。兩個不一樣，所以不是最右邊。`
+        }));
+
+        if (isRight) {
+          const add = h[n - 2];
+          const oldCost = cost;
+          cost += add;
+          records.push({ pos: i + 1, i, left: h[n - 2], right: '無', rule: '最右邊，看左邊', pick: add, cost });
+          s.push(makeStep({
+            activeLine: 11,
+            message: `最右邊只能參考左邊，所以 cost 加 h[${n - 2}] = ${add}。`,
+            result: `cost = ${cost}`,
+            i, cost, oldCost, addValue: add,
+            leftIndex: n - 2,
+            selectedIndex: n - 2,
+            records: cloneRecords(records),
+            questions: [
+              { text: `h[${i}] == 0 嗎？`, answer: '是', state: 'doneYes' },
+              { text: `i == 0 嗎？`, answer: '不是', state: 'doneNo' },
+              { text: `i == n - 1 嗎？`, answer: '是', state: 'doneYes' }
+            ],
+            calc: `cost = ${oldCost} + h[${n - 2}] = ${oldCost} + ${add} = ${cost}`
+          }));
+          continue;
+        }
+
+        s.push(makeStep({
+          activeLine: 12,
+          message: '前面確認：不是最左，也不是最右，所以現在才知道它是中間。',
+          result: `i = ${i}，cost = ${cost}`,
+          i, cost,
+          records: cloneRecords(records),
+          leftIndex: i - 1,
+          rightIndex: i + 1,
+          questions: [
+            { text: `h[${i}] == 0 嗎？`, answer: '是', state: 'doneYes' },
+            { text: `i == 0 嗎？`, answer: '不是', state: 'doneNo' },
+            { text: `i == n - 1 嗎？`, answer: '不是', state: 'doneNo' },
+            { text: '都不是邊界嗎？', answer: '是，中間', state: 'doneYes' }
+          ],
+          calc: `不是第一格，也不是最後一格，所以左右都有鄰居：左邊 h[${i - 1}] = ${h[i - 1]}，右邊 h[${i + 1}] = ${h[i + 1]}。`
+        }));
+
+        const left = h[i - 1];
+        const right = h[i + 1];
+        const add = Math.min(left, right);
+        const selectedIndex = left <= right ? i - 1 : i + 1;
+        const oldCost = cost;
+        cost += add;
+        records.push({ pos: i + 1, i, left, right, rule: '中間，左右選小', pick: add, cost });
+        s.push(makeStep({
+          activeLine: 13,
+          message: `中間壞掉看左右兩邊，選比較小的 ${add} 加進 cost。`,
+          result: `cost = ${cost}`,
+          i, cost, oldCost, addValue: add,
+          leftIndex: i - 1,
+          rightIndex: i + 1,
+          selectedIndex,
+          records: cloneRecords(records),
+          questions: [
+            { text: `h[${i}] == 0 嗎？`, answer: '是', state: 'doneYes' },
+            { text: `i == 0 嗎？`, answer: '不是', state: 'doneNo' },
+            { text: `i == n - 1 嗎？`, answer: '不是', state: 'doneNo' },
+            { text: `min(h[${i - 1}], h[${i + 1}])`, answer: `${add}`, state: 'doneYes' }
+          ],
+          calc: `cost = ${oldCost} + min(${left}, ${right}) = ${oldCost} + ${add} = ${cost}`
+        }));
+      }
+
+      s.push(makeStep({
+        activeLine: 15,
+        message: `全部檢查完，輸出最後答案 ${cost}。`,
+        result: `答案 = ${cost}`,
+        cost,
+        i: null,
+        records: cloneRecords(records),
+        calc: `print(cost)，所以輸出 ${cost}。`
+      }));
+
+      return s;
+    }
+
+    function getCurrentExample() {
+      return examples[currentExampleIndex];
+    }
+
+    function renderFenceSvg(step) {
+      const ex = getCurrentExample();
+      const n = ex.n;
+      const h = ex.h;
+      const margin = 34;
+      const cellW = 68;
+      const gap = 10;
+      const y = 72;
+      const cellH = 58;
+      const viewW = margin * 2 + n * cellW + (n - 1) * gap;
+      const viewH = 235;
+      const current = step.i;
+      fenceSvg.setAttribute('viewBox', `0 0 ${viewW} ${viewH}`);
+
+      const repairedSet = new Set((step.records || []).map(r => r.i));
+      const leftIndex = step.leftIndex;
+      const rightIndex = step.rightIndex;
+      const selectedIndex = step.selectedIndex;
+
+      let svg = `
+        <defs>
+          <marker id="arrowHead" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"></path>
+          </marker>
+        </defs>
+        <rect x="0" y="0" width="${viewW}" height="${viewH}" rx="16" fill="#fbfdff"></rect>
+        <text x="${margin}" y="24" font-size="16" font-weight="800" fill="#374151">index</text>
+        <text x="${margin}" y="58" font-size="16" font-weight="800" fill="#374151">高度 h[i]</text>
+      `;
+
+      for (let idx = 0; idx < n; idx++) {
+        const x = margin + idx * (cellW + gap);
+        const cx = x + cellW / 2;
+        let fill = '#ffffff';
+        let stroke = '#94a3b8';
+        let strokeW = 2;
+        let label = '';
+        let labelFill = '#374151';
+
+        if (h[idx] === 0) {
+          fill = '#ffe4e6';
+          stroke = '#fb7185';
+          label = '壞';
+          labelFill = '#9f1239';
+        }
+        if (repairedSet.has(idx)) {
+          fill = '#dcfce7';
+          stroke = '#22c55e';
+          label = '已修';
+          labelFill = '#166534';
+        }
+        if (idx === leftIndex || idx === rightIndex) {
+          fill = '#dbeafe';
+          stroke = '#60a5fa';
+          label = idx === leftIndex ? '左邊' : '右邊';
+          labelFill = '#1d4ed8';
+        }
+        if (idx === selectedIndex) {
+          fill = '#bbf7d0';
+          stroke = '#16a34a';
+          strokeW = 4;
+          label = '選它';
+          labelFill = '#166534';
+        }
+        if (idx === current) {
+          fill = '#fef3c7';
+          stroke = '#f59e0b';
+          strokeW = 4;
+          label = h[idx] === 0 ? '目前壞掉' : '目前檢查';
+          labelFill = '#92400e';
+        }
+
+        svg += `
+          <text x="${cx}" y="25" text-anchor="middle" font-size="18" font-weight="800" fill="#1f2937">${idx}</text>
+          <rect x="${x}" y="${y}" width="${cellW}" height="${cellH}" rx="12" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}"></rect>
+          <text x="${cx}" y="${y + 37}" text-anchor="middle" font-size="24" font-weight="900" fill="#111827">${h[idx]}</text>
+          ${label ? `<text x="${cx}" y="${y + cellH + 22}" text-anchor="middle" font-size="14" font-weight="800" fill="${labelFill}">${label}</text>` : ''}
+        `;
+      }
+
+      if (current !== null && current !== undefined) {
+        const x = margin + current * (cellW + gap) + cellW / 2;
+        svg += `
+          <line x1="${x}" y1="${viewH - 38}" x2="${x}" y2="${y + cellH + 4}" stroke="#2563eb" stroke-width="4" marker-end="url(#arrowHead)"></line>
+          <text x="${x}" y="${viewH - 12}" text-anchor="middle" font-size="18" font-weight="900" fill="#1e40af">目前 i = ${current}</text>
+        `;
+      } else {
+        svg += `<text x="${viewW / 2}" y="${viewH - 20}" text-anchor="middle" font-size="18" font-weight="800" fill="#6b7280">尚未進入某一格，或已經全部結束</text>`;
+      }
+
+      fenceSvg.innerHTML = svg;
+    }
+
+    function renderPositionInfo(step) {
+      const ex = getCurrentExample();
+      const n = ex.n;
+      const h = ex.h;
+      const last = n - 1;
+      if (step.i === null || step.i === undefined) {
+        positionInfo.innerHTML = `
+          <div class="key">n</div><div class="val">${n}</div>
+          <div class="key">最後位置</div><div class="val">n - 1 = ${last}</div>
+          <div class="key">目前 i</div><div class="val">尚未指到某一格</div>
+        `;
+        return;
+      }
+      const i = step.i;
+      positionInfo.innerHTML = `
+        <div class="key">目前 i</div><div class="val">${i}</div>
+        <div class="key">目前高度</div><div class="val">h[${i}] = ${h[i]}</div>
+        <div class="key">最左位置</div><div class="val">0</div>
+        <div class="key">最右位置</div><div class="val">n - 1 = ${n} - 1 = ${last}</div>
+      `;
+    }
+
+    function renderQuestions(step) {
+      const qs = step.questions || [];
+      if (qs.length === 0) {
+        questionList.innerHTML = `<div class="emptyText">等程式走到 if 判斷時，這裡會顯示每一個問題。</div>`;
+        return;
+      }
+      questionList.innerHTML = qs.map(q => {
+        const stateClass = q.state || '';
+        let pillClass = 'wait';
+        if (q.answer === '是' || String(q.answer).includes('中間')) pillClass = 'yes';
+        else if (q.answer === '不是') pillClass = 'no';
+        else if (q.answer !== undefined) pillClass = 'pick';
+        return `
+          <div class="qRow ${stateClass}">
+            <div>${escapeHtml(q.text)}</div>
+            <span class="pill ${pillClass}">${escapeHtml(q.answer ?? '等待')}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderRecords(records) {
+      if (!records || records.length === 0) {
+        recordWrap.innerHTML = `<div class="emptyText">目前還沒有修補紀錄。</div>`;
+        return;
+      }
+      const rows = records.map(r => `
+        <tr>
+          <td>第 ${r.pos} 格<br><span class="subtle">i=${r.i}</span></td>
+          <td>${escapeHtml(r.left)}</td>
+          <td>${escapeHtml(r.right)}</td>
+          <td>${escapeHtml(r.rule)}</td>
+          <td><strong>${escapeHtml(r.pick)}</strong></td>
+          <td><strong>${escapeHtml(r.cost)}</strong></td>
+        </tr>
+      `).join('');
+      recordWrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>壞掉位置</th>
+              <th>左邊</th>
+              <th>右邊</th>
+              <th>規則</th>
+              <th>選到</th>
+              <th>cost</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    function renderStep() {
+      const step = steps[stepIndex];
+      stepBadge.textContent = `步驟 ${stepIndex + 1} / ${steps.length}`;
+      answerBadge.textContent = step.result || `cost = ${step.cost}`;
+      messageBar.textContent = step.message;
+      calcLine.textContent = step.calc || '尚未開始計算。';
+
+      document.querySelectorAll('.codeLine').forEach(el => {
+        el.classList.toggle('active', Number(el.dataset.line) === step.activeLine);
+      });
+      const active = document.querySelector(`.codeLine[data-line="${step.activeLine}"]`);
+      if (active) active.scrollIntoView({ block: 'center', behavior: 'smooth' });
+
+      renderFenceSvg(step);
+      renderPositionInfo(step);
+      renderQuestions(step);
+      renderRecords(step.records);
+      syncToolbarHeight();
+    }
+
+    function goNext() {
+      if (stepIndex < steps.length - 1) {
+        stepIndex += 1;
+        renderStep();
+      } else {
+        stopPlay();
+      }
+    }
+
+    function goPrev() {
+      if (stepIndex > 0) {
+        stepIndex -= 1;
+        renderStep();
+      }
+    }
+
+    function reset() {
+      stopPlay();
+      stepIndex = 0;
+      renderStep();
+    }
+
+    function startPlay() {
+      if (timer) return;
+      document.getElementById('playBtn').textContent = '暫停';
+      timer = setInterval(() => {
+        if (stepIndex >= steps.length - 1) {
+          stopPlay();
+        } else {
+          goNext();
+        }
+      }, 950);
+    }
+
+    function stopPlay() {
+      if (timer) clearInterval(timer);
+      timer = null;
+      document.getElementById('playBtn').textContent = '播放';
+    }
+
+    function togglePlay() {
+      if (timer) stopPlay();
+      else startPlay();
+    }
+
+    function switchExample(idx) {
+      stopPlay();
+      currentExampleIndex = idx;
+      sampleSelect.value = String(idx);
+      steps = buildSteps(getCurrentExample());
+      stepIndex = 0;
+      updateModalSampleText();
+      renderStep();
+    }
+
+    function updateModalSampleText() {
+      const ex = getCurrentExample();
+      const finalStep = buildSteps(ex).at(-1);
+      modalSampleText.textContent = `目前範例輸入：\n${ex.n}\n${ex.h.join(' ')}\n\n最後答案：${finalStep.cost}`;
+    }
+
+    function openModal() {
+      updateModalSampleText();
+      modalBackdrop.classList.add('show');
+      modalBackdrop.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeModal() {
+      modalBackdrop.classList.remove('show');
+      modalBackdrop.setAttribute('aria-hidden', 'true');
+    }
+
+    function setupDivider() {
+      let dragging = false;
+      divider.addEventListener('pointerdown', (e) => {
+        dragging = true;
+        divider.setPointerCapture(e.pointerId);
+        document.body.style.userSelect = 'none';
+      });
+      divider.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const rect = main.getBoundingClientRect();
+        const percent = ((e.clientX - rect.left) / rect.width) * 100;
+        const clamped = Math.max(35, Math.min(72, percent));
+        document.documentElement.style.setProperty('--left-width', `${clamped}%`);
+      });
+      divider.addEventListener('pointerup', (e) => {
+        dragging = false;
+        try { divider.releasePointerCapture(e.pointerId); } catch (_) {}
+        document.body.style.userSelect = '';
+      });
+      divider.addEventListener('pointercancel', () => {
+        dragging = false;
+        document.body.style.userSelect = '';
+      });
+    }
+
+    document.getElementById('prevBtn').addEventListener('click', goPrev);
+    document.getElementById('nextBtn').addEventListener('click', goNext);
+    document.getElementById('playBtn').addEventListener('click', togglePlay);
+    document.getElementById('resetBtn').addEventListener('click', reset);
+    document.getElementById('topicBtn').addEventListener('click', openModal);
+    document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+    modalBackdrop.addEventListener('click', (e) => {
+      if (e.target === modalBackdrop) closeModal();
+    });
+    sampleSelect.addEventListener('change', (e) => switchExample(Number(e.target.value)));
+
+    window.addEventListener('keydown', (e) => {
+      if (modalBackdrop.classList.contains('show') && e.key === 'Escape') {
+        closeModal();
+        return;
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        goNext();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        goPrev();
+      } else if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      }
+    });
+
+    window.addEventListener('resize', syncToolbarHeight);
+    if ('ResizeObserver' in window) {
+      new ResizeObserver(syncToolbarHeight).observe(toolbar);
+    }
+
+    renderCode();
+    setupSampleSelect();
+    setupDivider();
+    steps = buildSteps(getCurrentExample());
+    updateModalSampleText();
+    syncToolbarHeight();
+    renderStep();
+  </script>
+</body>
+</html>
