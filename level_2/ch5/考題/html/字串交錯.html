@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>交錯字串 Alternating Strings｜白話教學動畫</title>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)'], ['$', '$']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <style>
+    :root {
+      --toolbar-h: 138px;
+      --border: #d7dde8;
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #5f6b7a;
+      --primary: #2563eb;
+      --primary-soft: #dbeafe;
+      --active: #f59e0b;
+      --active-soft: #fff7df;
+      --done-soft: #dcfce7;
+      --danger: #dc2626;
+      --code-bg: #0f172a;
+      --code-line: #1e293b;
+      --code-active: #334155;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      font-size: 16px;
+      line-height: 1.5;
+      overflow: hidden;
+    }
+
+    button, select {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid #aeb8c8;
+      background: #ffffff;
+      color: #172033;
+      padding: 7px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      min-height: 38px;
+    }
+
+    button:hover {
+      background: #eef4ff;
+      border-color: #7aa5f7;
+    }
+
+    button.primary {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    button.primary:hover {
+      background: #1d4ed8;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    select {
+      min-height: 38px;
+      border: 1px solid #aeb8c8;
+      border-radius: 8px;
+      padding: 7px 10px;
+      background: #ffffff;
+    }
+
+    #toolbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--toolbar-h);
+      z-index: 50;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: auto;
+    }
+
+    .titleRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .titleRow h1 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.25;
+    }
+
+    .hintText {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .controlRow {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      padding: 7px 10px;
+      border-radius: 10px;
+      min-height: 38px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    #messageLabel {
+      flex: 1 1 420px;
+      min-width: 320px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #1f2937;
+      background: #fff7df;
+      border-color: #f6c86a;
+      white-space: normal;
+    }
+
+    .workspace {
+      margin-top: var(--toolbar-h);
+      height: calc(100vh - var(--toolbar-h));
+      display: flex;
+      min-height: 0;
+      width: 100vw;
+    }
+
+    .panel {
+      height: 100%;
+      min-height: 0;
+      overflow: auto;
+    }
+
+    #leftPanel {
+      flex: 0 0 56%;
+      min-width: 360px;
+      padding: 12px;
+    }
+
+    #rightPanel {
+      flex: 1 1 auto;
+      min-width: 360px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: hidden;
+    }
+
+    #gutter {
+      flex: 0 0 9px;
+      background: #d5dce8;
+      border-left: 1px solid #c3cad7;
+      border-right: 1px solid #c3cad7;
+      cursor: col-resize;
+    }
+
+    #gutter:hover,
+    #gutter.dragging {
+      background: #93c5fd;
+    }
+
+    .leftContent {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    section.card,
+    .card {
+      position: relative;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+    }
+
+    .card h2 {
+      margin: 0 0 10px 0;
+      font-size: 20px;
+      line-height: 1.35;
+      font-weight: 800;
+    }
+
+    .card h3 {
+      margin: 12px 0 6px 0;
+      font-size: 17px;
+    }
+
+    .summaryGrid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 8px;
+    }
+
+    .summaryItem {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 8px;
+      background: #f8fafc;
+      min-height: 62px;
+    }
+
+    .summaryItem .label {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .summaryItem .value {
+      font-size: 18px;
+      font-weight: 700;
+      word-break: break-word;
+    }
+
+    .svgBox {
+      height: 300px;
+      border: 1px solid #dce3ee;
+      border-radius: 10px;
+      background: #ffffff;
+      overflow: hidden;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+
+    .svgBox svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .rowWrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: stretch;
+      max-height: 190px;
+      overflow: auto;
+      padding: 4px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #fbfdff;
+    }
+
+    .cell {
+      min-width: 58px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 7px 8px;
+      background: #ffffff;
+      text-align: center;
+      font-size: 16px;
+    }
+
+    .cell .small {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .cell.active {
+      outline: 3px solid var(--active);
+      background: var(--active-soft);
+      border-color: var(--active);
+    }
+
+    .cell.done {
+      background: var(--done-soft);
+    }
+
+    .cell.upper {
+      border-color: #93c5fd;
+      background: #eff6ff;
+    }
+
+    .cell.lower {
+      border-color: #86efac;
+      background: #f0fdf4;
+    }
+
+    .cell.candidate {
+      background: #fef3c7;
+      border-color: #f59e0b;
+      outline: 2px solid #fbbf24;
+    }
+
+    .cell.extra {
+      background: #fce7f3;
+      border-color: #db2777;
+      outline: 2px dashed #db2777;
+    }
+
+    .varGrid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
+      gap: 8px;
+    }
+
+    .varBox {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 8px;
+      background: #f8fafc;
+      min-height: 62px;
+    }
+
+    .varBox .label {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .varBox .value {
+      font-size: 18px;
+      font-weight: 700;
+      word-break: break-word;
+    }
+
+    .explainBox {
+      border: 1px solid #fde68a;
+      background: #fffbeb;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .legend i {
+      display: inline-block;
+      width: 24px;
+      height: 16px;
+      border-radius: 5px;
+      border: 1px solid #94a3b8;
+      background: #ffffff;
+    }
+
+    .legend i.upper { background: #dbeafe; }
+    .legend i.lower { background: #dcfce7; }
+    .legend i.candidate { background: #fef3c7; border-color: #f59e0b; }
+    .legend i.extra { background: #fce7f3; border-color: #db2777; }
+
+    .codeHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .codeHeader h2 {
+      margin: 0;
+      font-size: 19px;
+    }
+
+    #codeWrap {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
+      background: var(--code-bg);
+      color: #e5e7eb;
+      border-radius: 12px;
+      border: 1px solid #1e293b;
+      font-family: Consolas, "Cascadia Code", "Courier New", monospace;
+      font-size: 15px;
+      line-height: 1.6;
+      padding: 8px 0;
+    }
+
+    .codeLine {
+      display: grid;
+      grid-template-columns: 54px minmax(600px, 1fr);
+      min-height: 25px;
+      background: transparent;
+    }
+
+    .codeLine .lineNo {
+      color: #94a3b8;
+      text-align: right;
+      padding: 0 10px 0 6px;
+      border-right: 1px solid rgba(148, 163, 184, 0.35);
+      user-select: none;
+    }
+
+    .codeLine .codeText {
+      white-space: pre;
+      padding-left: 12px;
+      padding-right: 12px;
+    }
+
+    .codeLine.activeLine {
+      background: var(--code-active);
+      outline: 2px solid #f59e0b;
+      outline-offset: -2px;
+    }
+
+    .codeLine.activeLine .lineNo {
+      color: #facc15;
+      font-weight: 700;
+    }
+
+    .miniNote {
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .tableWrap {
+      overflow: auto;
+      max-height: 240px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      background: #ffffff;
+    }
+
+    th, td {
+      border-bottom: 1px solid #e2e8f0;
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f8fafc;
+      color: #334155;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .modalBackdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .modalBackdrop.show {
+      display: flex;
+    }
+
+    .modal {
+      width: min(980px, 96vw);
+      max-height: 70vh;
+      overflow: auto;
+      background: #ffffff;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.28);
+      padding: 18px;
+    }
+
+    .modalHeader {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    .modalHeader h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .modal p,
+    .modal li {
+      font-size: 17px;
+      line-height: 1.7;
+    }
+
+    .formula {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: #eef2ff;
+      font-family: "Cambria Math", "Times New Roman", serif;
+      font-size: 1.05em;
+    }
+
+    .sampleButtons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 8px 0;
+    }
+
+    @media (max-width: 900px) {
+      :root { --toolbar-h: 178px; }
+      .workspace { flex-direction: column; overflow: auto; }
+      #leftPanel, #rightPanel { flex: 0 0 auto; width: 100%; min-width: 0; height: auto; overflow: visible; }
+      #rightPanel { height: 520px; overflow: hidden; }
+      #gutter { display: none; }
+      .summaryGrid, .varGrid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+      body { overflow: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header id="toolbar">
+    <div class="titleRow">
+      <h1>交錯字串 Alternating Strings｜一步一步動畫</h1>
+      <div class="hintText">鍵盤：← 上一步　→ 下一步　Space 播放 / 暫停</div>
+    </div>
+    <div class="controlRow">
+      <button id="prevBtn">上一步</button>
+      <button id="nextBtn" class="primary">下一步</button>
+      <button id="playBtn">播放</button>
+      <button id="pauseBtn">暫停</button>
+      <button id="resetBtn">重設</button>
+      <select id="sampleSelect" title="切換範例"></select>
+      <button id="problemBtn">題目說明</button>
+      <span id="stepLabel" class="pill">步驟 0 / 0</span>
+      <span id="resultLabel" class="pill">狀態：尚未開始</span>
+      <span id="messageLabel" class="pill">請按「下一步」開始。</span>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <aside id="leftPanel" class="panel">
+      <div class="leftContent">
+        <section class="card">
+          <h2>目前輸入與任務</h2>
+          <div class="summaryGrid" id="summaryGrid"></div>
+        </section>
+
+        <section class="card visualCard">
+          <h2>資料結構視覺化</h2>
+          <div class="svgBox">
+            <svg id="visualSvg" viewBox="0 0 1000 320" preserveAspectRatio="xMidYMin meet" role="img" aria-label="交錯字串資料視覺化"></svg>
+          </div>
+          <div class="legend">
+            <span><i class="upper"></i>大寫段</span>
+            <span><i class="lower"></i>小寫段</span>
+            <span><i class="candidate"></i>目前連續 k 段</span>
+            <span><i class="extra"></i>左右可切出 k 的長段</span>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>uorl：把大小寫轉成 0 / 1</h2>
+          <div class="miniNote">0 代表大寫，1 代表小寫。這樣程式就不用一直判斷 A~Z 或 a~z。</div>
+          <div id="charList" class="rowWrap" aria-label="uorl列表"></div>
+        </section>
+
+        <section class="card">
+          <h2>seg：連續同類型片段長度</h2>
+          <div class="miniNote">例如 aBBdaaa 會變成小寫 1、大寫 2、小寫 4，所以 seg = [1, 2, 4]。</div>
+          <div id="segList" class="rowWrap" aria-label="seg列表"></div>
+        </section>
+
+        <section class="card">
+          <h2>指標與計算</h2>
+          <div id="varGrid" class="varGrid"></div>
+          <div id="calcExplain" class="explainBox" style="margin-top:10px;">尚未開始計算。</div>
+        </section>
+
+        <section class="card">
+          <h2>範例快速切換</h2>
+          <div class="sampleButtons" id="sampleButtons"></div>
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr><th>範例</th><th>輸入</th><th>正確輸出</th><th>seg</th></tr>
+              </thead>
+              <tbody id="sampleTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </aside>
+
+    <div id="gutter" title="拖曳調整左右寬度"></div>
+
+    <section id="rightPanel" class="panel">
+      <div class="card codeHeader">
+        <h2>完整 Python 程式碼</h2>
+        <div class="miniNote">動畫會同步高亮目前執行的程式碼行。</div>
+      </div>
+      <div id="codeWrap" aria-label="Python程式碼" role="region"></div>
+    </section>
+  </main>
+
+  <div id="modalBackdrop" class="modalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="problemTitle">
+      <div class="modalHeader">
+        <h2 id="problemTitle">題目說明：交錯字串</h2>
+        <button id="closeModalBtn">關閉</button>
+      </div>
+
+      <h3>題目白話版</h3>
+      <p>一個字串只由英文字母組成。大寫字母連在一起，可以看成「大寫片段」；小寫字母連在一起，可以看成「小寫片段」。</p>
+      <p>給定一個自然數 <var>k</var>。如果一段連續子字串可以切成一段一段，而且每一段的長度都剛好是 <var>k</var>，並且大寫、小寫交替出現，就叫做 <var>k</var>-交錯字串。</p>
+      <p>本題要找：輸入字串裡面，最長的一段連續子字串，符合 <var>k</var>-交錯字串的長度。</p>
+
+      <h3>重要提醒</h3>
+      <ul>
+        <li>答案要的是「長度」，不是子字串本身。</li>
+        <li>子字串必須連續，不能跳著拿字母。</li>
+        <li>如果只有一段長度剛好是 <var>k</var> 的大寫或小寫，也算符合。</li>
+        <li>如果某段長度大於 <var>k</var>，可以從裡面切出剛好 <var>k</var> 個字元來接左右邊，但不能整段都拿。</li>
+      </ul>
+
+      <h3>這份程式的想法</h3>
+      <ol>
+        <li>先把每個字母轉成 0 或 1：大寫是 0，小寫是 1。</li>
+        <li>再把連續一樣的 0 或 1 壓縮成段長，存入 seg。</li>
+        <li>最後在 seg 裡找連續長度剛好等於 <var>k</var> 的段。</li>
+        <li>左右如果有長度大於 <var>k</var> 的段，就各自可以多切出 <var>k</var> 個字元。</li>
+      </ol>
+
+      <h3>計算式</h3>
+      <p>中間連續都是 <var>k</var> 的段長度為：</p>
+      <p><span class="formula">t = (ri - le) × k</span></p>
+      <p>左邊或右邊如果長度大於 <var>k</var>，每邊最多只加 <var>k</var>。</p>
+
+      <h3>官方範例</h3>
+      <div class="tableWrap">
+        <table>
+          <thead><tr><th>範例</th><th>輸入</th><th>正確輸出</th><th>簡單說明</th></tr></thead>
+          <tbody>
+            <tr><td>一</td><td><pre>1\naBBdaaa</pre></td><td>2</td><td>最長可以取 BB 或 aa 這類長度 2 的交錯結果。</td></tr>
+            <tr><td>二</td><td><pre>3\nDDaasAAbbCC</pre></td><td>3</td><td>可以只取一段長度 3 的小寫片段 aas。</td></tr>
+            <tr><td>三</td><td><pre>2\naafAXbbCDCCC</pre></td><td>8</td><td>seg = [3, 2, 2, 5]，中間兩段 2，加上左右各切出 2。</td></tr>
+            <tr><td>四</td><td><pre>3\nDDaaAAbbCC</pre></td><td>0</td><td>沒有任何一段長度剛好 3，也沒有辦法組出 3-交錯字串。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const samples = [
+      { name: '範例一', k: 1, text: 'aBBdaaa', answer: 2 },
+      { name: '範例二', k: 3, text: 'DDaasAAbbCC', answer: 3 },
+      { name: '範例三', k: 2, text: 'aafAXbbCDCCC', answer: 8 },
+      { name: '範例四', k: 3, text: 'DDaaAAbbCC', answer: 0 }
+    ];
+
+    const codeLines = [
+      '# 讀入 k',
+      'k = int(input())',
+      '',
+      '# 讀入原始字串',
+      'a = input()',
+      '',
+      '# uorl：0 代表大寫，1 代表小寫',
+      'uorl = []',
+      'for c in a:',
+      "    if c >= 'A' and c <= 'Z':",
+      '        uorl.append(0)',
+      "    elif c >= 'a' and c <= 'z':",
+      '        uorl.append(1)',
+      '',
+      '# seg：記錄每一段連續大寫或小寫的長度',
+      'seg = []',
+      'my_len = 1',
+      'for i in range(1, len(uorl)):',
+      '    if uorl[i] == uorl[i - 1]:',
+      '        my_len += 1',
+      '    else:',
+      '        seg.append(my_len)',
+      '        my_len = 1',
+      'seg.append(my_len)',
+      '',
+      '# 開始在 seg 裡找最長 k-交錯字串',
+      'longest = 0',
+      'm = len(seg)',
+      'le = 0',
+      'while le < m:',
+      '    while le < m and seg[le] != k:',
+      '        le += 1',
+      '    if le >= m:',
+      '        break',
+      '    ri = le + 1',
+      '    while ri < m and seg[ri] == k:',
+      '        ri += 1',
+      '    t = (ri - le) * k',
+      '    if le > 0 and seg[le - 1] > k:',
+      '        t += k',
+      '    if ri < m and seg[ri] > k:',
+      '        t += k',
+      '    if t > longest:',
+      '        longest = t',
+      '    le = ri + 1',
+      'print(longest)'
+    ];
+
+    let currentSampleIndex = 0;
+    let steps = [];
+    let stepIndex = 0;
+    let timer = null;
+
+    function isUpper(ch) {
+      return ch >= 'A' && ch <= 'Z';
+    }
+
+    function isLower(ch) {
+      return ch >= 'a' && ch <= 'z';
+    }
+
+    function clone(obj) {
+      return JSON.parse(JSON.stringify(obj));
+    }
+
+    function typeName(v) {
+      if (v === 0) return '大寫';
+      if (v === 1) return '小寫';
+      return '未知';
+    }
+
+    function arrText(arr) {
+      if (!arr || arr.length === 0) return '[]';
+      return '[' + arr.join(', ') + ']';
+    }
+
+    function safe(v) {
+      if (v === undefined || v === null) return '-';
+      return String(v);
+    }
+
+    function computeSegTypesFromState(state) {
+      const types = [];
+      if (!state.uorl || state.uorl.length === 0 || !state.seg) return types;
+      let currentType = state.uorl[0];
+      for (let i = 0; i < state.seg.length; i++) {
+        types.push(currentType);
+        currentType = currentType === 0 ? 1 : 0;
+      }
+      return types;
+    }
+
+    function fullSegInfo(k, text) {
+      const uorl = [];
+      for (const c of text) {
+        if (isUpper(c)) uorl.push(0);
+        else if (isLower(c)) uorl.push(1);
+      }
+      const seg = [];
+      if (uorl.length > 0) {
+        let len = 1;
+        for (let i = 1; i < uorl.length; i++) {
+          if (uorl[i] === uorl[i - 1]) len++;
+          else { seg.push(len); len = 1; }
+        }
+        seg.push(len);
+      }
+      return { uorl, seg };
+    }
+
+    function buildSteps(sample) {
+      const state = {
+        k: null,
+        a: '',
+        expected: sample.answer,
+        uorl: [],
+        seg: [],
+        my_len: null,
+        longest: null,
+        m: null,
+        le: null,
+        ri: null,
+        t: null,
+        activeCharIndex: null,
+        comparePair: null,
+        activeSegIndex: null,
+        candidateStart: null,
+        candidateEnd: null,
+        leftExtraIndex: null,
+        rightExtraIndex: null,
+        phase: '準備開始',
+        calc: '尚未開始。'
+      };
+
+      const resultText = () => {
+        const parts = [];
+        if (state.k !== null) parts.push('k=' + state.k);
+        if (state.longest !== null) parts.push('longest=' + state.longest);
+        if (state.le !== null) parts.push('le=' + state.le);
+        if (state.ri !== null) parts.push('ri=' + state.ri);
+        if (state.t !== null) parts.push('t=' + state.t);
+        return parts.length ? parts.join('｜') : '尚未開始';
+      };
+
+      const list = [];
+      function push(line, message, phase, calc) {
+        if (phase !== undefined) state.phase = phase;
+        if (calc !== undefined) state.calc = calc;
+        list.push({
+          activeLine: line,
+          message,
+          result: resultText(),
+          state: clone(state)
+        });
+      }
+
+      push(1, '準備讀入 k。k 是每一段要剛好幾個字母。', '讀入資料', '先知道每一段要切多長。');
+      state.k = sample.k;
+      push(2, `讀到 k = ${state.k}。`, '讀入資料', `每一段必須剛好 ${state.k} 個字母。`);
+
+      push(4, '準備讀入原始字串。', '讀入資料', '下一行就是要檢查的字串。');
+      state.a = sample.text;
+      push(5, `讀到字串：${state.a}。`, '讀入資料', `字串長度是 ${state.a.length}。`);
+
+      push(8, '建立空的 uorl，準備記錄每個字母是大寫還是小寫。', '建立 uorl', 'uorl 目前是 []。');
+      for (let idx = 0; idx < state.a.length; idx++) {
+        const ch = state.a[idx];
+        state.activeCharIndex = idx;
+        state.comparePair = null;
+        push(9, `for 迴圈讀到第 ${idx} 個字元：${ch}。`, '建立 uorl', `目前字元是 ${ch}。`);
+        if (isUpper(ch)) {
+          push(10, `${ch} 是大寫字母，進入 if。`, '建立 uorl', '大寫 → 0。');
+          state.uorl.push(0);
+          push(11, `執行 uorl.append(0)，現在 uorl = ${arrText(state.uorl)}。`, '建立 uorl', `uorl 增加一格：${arrText(state.uorl)}。`);
+        } else {
+          push(10, `${ch} 不是大寫，所以第 10 行 if 不成立。`, '建立 uorl', '改去檢查小寫條件。');
+          push(12, `${ch} 是小寫字母，進入 elif。`, '建立 uorl', '小寫 → 1。');
+          state.uorl.push(1);
+          push(13, `執行 uorl.append(1)，現在 uorl = ${arrText(state.uorl)}。`, '建立 uorl', `uorl 增加一格：${arrText(state.uorl)}。`);
+        }
+      }
+      state.activeCharIndex = null;
+      push(15, `uorl 完成：${arrText(state.uorl)}。接著要壓縮成連續段長度。`, '建立 seg', '把連續相同類型合成一段。');
+
+      state.seg = [];
+      push(16, '建立空的 seg，等一下放每一段的長度。', '建立 seg', 'seg 目前是 []。');
+      state.my_len = 1;
+      push(17, 'my_len 設為 1，代表目前這一段先有 1 個字母。', '建立 seg', '從第 0 個字母開始算目前段長。');
+
+      for (let i = 1; i < state.uorl.length; i++) {
+        state.activeCharIndex = i;
+        state.comparePair = [i - 1, i];
+        state.activeSegIndex = null;
+        push(18, `for 迴圈：i = ${i}，準備比較 uorl[${i - 1}] 和 uorl[${i}]。`, '建立 seg', `比較第 ${i - 1} 格與第 ${i} 格。`);
+        const prev = state.uorl[i - 1];
+        const cur = state.uorl[i];
+        if (cur === prev) {
+          push(19, `條件成立：兩格都是 ${cur}（${typeName(cur)}），代表同一段繼續。`, '建立 seg', `${typeName(cur)}連續，所以 my_len 要加 1。`);
+          state.my_len += 1;
+          push(20, `執行 my_len += 1，現在目前這段長度是 ${state.my_len}。`, '建立 seg', `目前段長 my_len = ${state.my_len}。`);
+        } else {
+          push(19, `條件不成立：${prev} 變成 ${cur}，代表上一段結束。`, '建立 seg', '類型改變，所以會進入 else。');
+          push(21, '進入 else：準備把上一段長度存進 seg。', '建立 seg', `上一段長度是 my_len = ${state.my_len}。`);
+          state.seg.push(state.my_len);
+          state.activeSegIndex = state.seg.length - 1;
+          push(22, `執行 seg.append(my_len)，把 ${state.my_len} 放進 seg，現在 seg = ${arrText(state.seg)}。`, '建立 seg', `seg 新增一段：${state.my_len}。`);
+          state.my_len = 1;
+          push(23, '執行 my_len = 1，新的一段重新開始。', '建立 seg', '新段第一個字母已經算 1 個。');
+        }
+      }
+
+      state.activeCharIndex = null;
+      state.comparePair = null;
+      state.seg.push(state.my_len);
+      state.activeSegIndex = state.seg.length - 1;
+      push(24, `迴圈結束後，最後一段還沒放進 seg，所以補上 ${state.my_len}。seg = ${arrText(state.seg)}。`, '建立 seg', `最後完成 seg = ${arrText(state.seg)}。`);
+
+      state.activeSegIndex = null;
+      state.longest = 0;
+      push(27, 'longest 設為 0，代表目前還沒有找到答案。', '搜尋答案', 'longest 會一直記錄目前最大長度。');
+      state.m = state.seg.length;
+      push(28, `m = len(seg) = ${state.m}，代表總共有 ${state.m} 段。`, '搜尋答案', `seg 共有 ${state.m} 段。`);
+      state.le = 0;
+      push(29, 'le 從 0 開始，準備從最左邊找長度剛好 k 的段。', '搜尋答案', 'le 是左指標。');
+
+      let stoppedByBreak = false;
+      while (state.le < state.m) {
+        state.ri = null;
+        state.t = null;
+        state.candidateStart = null;
+        state.candidateEnd = null;
+        state.leftExtraIndex = null;
+        state.rightExtraIndex = null;
+        state.activeSegIndex = state.le;
+        push(30, `檢查外層 while：le = ${state.le}，m = ${state.m}，le < m 成立。`, '搜尋答案', '外層 while 繼續找下一組。');
+
+        while (state.le < state.m && state.seg[state.le] !== state.k) {
+          state.activeSegIndex = state.le;
+          push(31, `檢查內層 while：seg[${state.le}] = ${state.seg[state.le]}，不等於 k = ${state.k}。`, '搜尋答案', '不是剛好 k，這段不能當中間完整段。');
+          state.le += 1;
+          state.activeSegIndex = state.le < state.m ? state.le : null;
+          push(32, `執行 le += 1，le 右移到 ${state.le}。`, '搜尋答案', '繼續找下一段。');
+        }
+
+        if (state.le < state.m) {
+          state.activeSegIndex = state.le;
+          state.candidateStart = state.le;
+          state.candidateEnd = state.le;
+          push(31, `內層 while 停止：seg[${state.le}] = ${state.seg[state.le]}，剛好等於 k = ${state.k}，找到起點。`, '搜尋答案', '找到第一段剛好 k 的片段。');
+        }
+
+        state.activeSegIndex = state.le < state.m ? state.le : null;
+        if (state.le >= state.m) {
+          push(33, `檢查 if le >= m：${state.le} >= ${state.m} 成立，後面沒有起點了。`, '搜尋答案', '找不到新的長度 k 片段。');
+          push(34, '執行 break，離開搜尋迴圈。', '搜尋答案', `目前最大答案 longest = ${state.longest}。`);
+          stoppedByBreak = true;
+          break;
+        } else {
+          push(33, `檢查 if le >= m：${state.le} >= ${state.m} 不成立，所以不會 break。`, '搜尋答案', '可以繼續往右找連續 k 段。');
+        }
+
+        state.ri = state.le + 1;
+        state.activeSegIndex = state.ri < state.m ? state.ri : state.le;
+        push(35, `執行 ri = le + 1，所以 ri = ${state.ri}。`, '搜尋答案', 'ri 往右找，看後面是否也連續等於 k。');
+
+        while (state.ri < state.m && state.seg[state.ri] === state.k) {
+          state.activeSegIndex = state.ri;
+          push(36, `檢查右邊：seg[${state.ri}] = ${state.seg[state.ri]}，也等於 k。`, '搜尋答案', '這一段可以接在目前候選答案後面。');
+          state.candidateEnd = state.ri;
+          state.ri += 1;
+          state.activeSegIndex = state.ri < state.m ? state.ri : null;
+          push(37, `執行 ri += 1，ri 右移到 ${state.ri}。`, '搜尋答案', '繼續檢查下一段。');
+        }
+
+        state.activeSegIndex = state.ri < state.m ? state.ri : null;
+        const stopReason = state.ri >= state.m ? 'ri 已經到最後面' : `seg[${state.ri}] = ${state.seg[state.ri]} 不是 k`;
+        push(36, `內層 ri 搜尋停止：${stopReason}。`, '搜尋答案', `連續 k 段是 seg[${state.candidateStart}] 到 seg[${state.candidateEnd}]。`);
+
+        state.t = (state.ri - state.le) * state.k;
+        const middleCount = state.ri - state.le;
+        state.activeSegIndex = null;
+        push(38, `執行 t = (ri - le) * k。中間有 ${middleCount} 段，所以 t = (${state.ri} - ${state.le}) × ${state.k} = ${state.t}。`, '計算長度', `公式：t = (ri - le) × k = ${state.t}。`);
+
+        state.activeSegIndex = state.le > 0 ? state.le - 1 : null;
+        if (state.le > 0 && state.seg[state.le - 1] > state.k) {
+          push(39, `檢查左邊：seg[${state.le - 1}] = ${state.seg[state.le - 1]}，大於 k = ${state.k}，條件成立。`, '計算長度', '左邊長段可以切出剛好 k 個字母。');
+          state.leftExtraIndex = state.le - 1;
+          state.t += state.k;
+          push(40, `執行 t += k，左邊多加 ${state.k}，現在 t = ${state.t}。`, '計算長度', '左邊只能加 k，不是整段都加。');
+        } else {
+          const reason = state.le === 0 ? '左邊沒有段' : `seg[${state.le - 1}] = ${state.seg[state.le - 1]} 沒有大於 k`;
+          push(39, `檢查左邊：${reason}，條件不成立。`, '計算長度', '左邊不能加長度。');
+        }
+
+        state.activeSegIndex = state.ri < state.m ? state.ri : null;
+        if (state.ri < state.m && state.seg[state.ri] > state.k) {
+          push(41, `檢查右邊：seg[${state.ri}] = ${state.seg[state.ri]}，大於 k = ${state.k}，條件成立。`, '計算長度', '右邊長段也可以切出剛好 k 個字母。');
+          state.rightExtraIndex = state.ri;
+          state.t += state.k;
+          push(42, `執行 t += k，右邊多加 ${state.k}，現在 t = ${state.t}。`, '計算長度', '右邊也只能加 k，不是整段都加。');
+        } else {
+          const reason = state.ri >= state.m ? '右邊沒有段' : `seg[${state.ri}] = ${state.seg[state.ri]} 沒有大於 k`;
+          push(41, `檢查右邊：${reason}，條件不成立。`, '計算長度', '右邊不能加長度。');
+        }
+
+        state.activeSegIndex = null;
+        if (state.t > state.longest) {
+          push(43, `檢查 if t > longest：${state.t} > ${state.longest} 成立。`, '更新答案', '找到更長的答案。');
+          state.longest = state.t;
+          push(44, `執行 longest = t，更新 longest = ${state.longest}。`, '更新答案', `目前最大答案變成 ${state.longest}。`);
+        } else {
+          push(43, `檢查 if t > longest：${state.t} > ${state.longest} 不成立。`, '更新答案', '答案不用更新。');
+        }
+
+        state.le = state.ri + 1;
+        state.candidateStart = null;
+        state.candidateEnd = null;
+        state.leftExtraIndex = null;
+        state.rightExtraIndex = null;
+        state.activeSegIndex = state.le < state.m ? state.le : null;
+        push(45, `執行 le = ri + 1，所以 le = ${state.le}。`, '搜尋答案', 'ri 停住的那段不是 k，不能當中間段，所以直接跳過。');
+      }
+
+      if (!stoppedByBreak && state.le !== null && state.m !== null && state.le >= state.m) {
+        state.activeSegIndex = null;
+        push(30, `再次檢查外層 while：le = ${state.le}，m = ${state.m}，le < m 不成立。`, '搜尋答案', '搜尋結束。');
+      }
+
+      state.activeSegIndex = null;
+      state.activeCharIndex = null;
+      state.comparePair = null;
+      state.candidateStart = null;
+      state.candidateEnd = null;
+      state.leftExtraIndex = null;
+      state.rightExtraIndex = null;
+      state.le = null;
+      state.ri = null;
+      state.t = null;
+      push(46, `輸出 longest = ${state.longest}。`, '完成', `最後答案是 ${state.longest}。`);
+      return list;
+    }
+
+    function renderCode(activeLine) {
+      const wrap = document.getElementById('codeWrap');
+      const oldTop = wrap.scrollTop;
+      const oldLeft = wrap.scrollLeft;
+      wrap.textContent = '';
+      codeLines.forEach((line, idx) => {
+        const lineNo = idx + 1;
+        const row = document.createElement('div');
+        row.className = 'codeLine' + (lineNo === activeLine ? ' activeLine' : '');
+        row.dataset.line = String(lineNo);
+        const no = document.createElement('span');
+        no.className = 'lineNo';
+        no.textContent = lineNo;
+        const text = document.createElement('span');
+        text.className = 'codeText';
+        text.textContent = line;
+        row.appendChild(no);
+        row.appendChild(text);
+        wrap.appendChild(row);
+      });
+
+      // 保留原本位置，只在目前高亮行快看不到時才捲動。
+      // 這樣程式碼區不會每一步都強制置中，避免學生看到畫面亂跳。
+      wrap.scrollTop = oldTop;
+      wrap.scrollLeft = oldLeft;
+
+      const active = wrap.querySelector('.activeLine');
+      if (active) {
+        const margin = 48;
+        const activeTop = active.offsetTop;
+        const activeBottom = activeTop + active.offsetHeight;
+        const visibleTop = wrap.scrollTop;
+        const visibleBottom = visibleTop + wrap.clientHeight;
+
+        if (activeTop < visibleTop + margin) {
+          wrap.scrollTop = Math.max(0, activeTop - margin);
+        } else if (activeBottom > visibleBottom - margin) {
+          wrap.scrollTop = activeBottom - wrap.clientHeight + margin;
+        }
+      }
+    }
+
+    function renderSummary(step) {
+      const s = step.state;
+      const sample = samples[currentSampleIndex];
+      const items = [
+        ['目前範例', sample.name],
+        ['k', s.k === null ? '-' : s.k],
+        ['輸入字串', s.a || '-'],
+        ['正確輸出', sample.answer],
+        ['目前階段', s.phase],
+        ['目前答案 longest', s.longest === null ? '-' : s.longest],
+        ['目前執行行', '第 ' + step.activeLine + ' 行'],
+        ['目前說明', step.message]
+      ];
+      const grid = document.getElementById('summaryGrid');
+      grid.textContent = '';
+      for (const [label, value] of items) {
+        const div = document.createElement('div');
+        div.className = 'summaryItem';
+        const lab = document.createElement('div');
+        lab.className = 'label';
+        lab.textContent = label;
+        const val = document.createElement('div');
+        val.className = 'value';
+        val.textContent = value;
+        div.appendChild(lab);
+        div.appendChild(val);
+        grid.appendChild(div);
+      }
+    }
+
+    function renderCharList(state) {
+      const wrap = document.getElementById('charList');
+      wrap.textContent = '';
+      const text = state.a || samples[currentSampleIndex].text;
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        const div = document.createElement('div');
+        const val = state.uorl && i < state.uorl.length ? state.uorl[i] : null;
+        let cls = 'cell ' + (isUpper(ch) ? 'upper' : 'lower');
+        if (i === state.activeCharIndex || (state.comparePair && state.comparePair.includes(i))) cls += ' active';
+        else if (val !== null) cls += ' done';
+        div.className = cls;
+        div.innerHTML = '';
+        const top = document.createElement('strong');
+        top.textContent = ch;
+        const small1 = document.createElement('span');
+        small1.className = 'small';
+        small1.textContent = 'index ' + i;
+        const small2 = document.createElement('span');
+        small2.className = 'small';
+        small2.textContent = val === null ? '尚未轉換' : 'uorl=' + val + '（' + typeName(val) + '）';
+        div.appendChild(top);
+        div.appendChild(small1);
+        div.appendChild(small2);
+        wrap.appendChild(div);
+      }
+    }
+
+    function renderSegList(state) {
+      const wrap = document.getElementById('segList');
+      wrap.textContent = '';
+      const types = computeSegTypesFromState(state);
+      if (!state.seg || state.seg.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'miniNote';
+        empty.textContent = 'seg 尚未建立。';
+        wrap.appendChild(empty);
+        return;
+      }
+      for (let i = 0; i < state.seg.length; i++) {
+        const div = document.createElement('div');
+        let cls = 'cell ' + (types[i] === 0 ? 'upper' : 'lower');
+        if (i === state.activeSegIndex) cls += ' active';
+        if (state.candidateStart !== null && i >= state.candidateStart && i <= state.candidateEnd) cls += ' candidate';
+        if (i === state.leftExtraIndex || i === state.rightExtraIndex) cls += ' extra';
+        div.className = cls;
+        const strong = document.createElement('strong');
+        strong.textContent = 'seg[' + i + '] = ' + state.seg[i];
+        const small1 = document.createElement('span');
+        small1.className = 'small';
+        small1.textContent = typeName(types[i]) + '片段';
+        const small2 = document.createElement('span');
+        small2.className = 'small';
+        small2.textContent = state.seg[i] === state.k ? '剛好 k' : (state.seg[i] > state.k ? '大於 k' : '小於 k');
+        div.appendChild(strong);
+        div.appendChild(small1);
+        div.appendChild(small2);
+        wrap.appendChild(div);
+      }
+    }
+
+    function renderVars(state) {
+      const vars = [
+        ['uorl', arrText(state.uorl || [])],
+        ['seg', arrText(state.seg || [])],
+        ['my_len', safe(state.my_len)],
+        ['m', safe(state.m)],
+        ['le', safe(state.le)],
+        ['ri', safe(state.ri)],
+        ['t', safe(state.t)],
+        ['longest', safe(state.longest)],
+        ['目前字元', state.activeCharIndex === null ? '-' : state.activeCharIndex + '：' + state.a[state.activeCharIndex]],
+        ['目前片段', state.activeSegIndex === null ? '-' : 'seg[' + state.activeSegIndex + ']']
+      ];
+      const grid = document.getElementById('varGrid');
+      grid.textContent = '';
+      vars.forEach(([label, value]) => {
+        const box = document.createElement('div');
+        box.className = 'varBox';
+        const lab = document.createElement('div');
+        lab.className = 'label';
+        lab.textContent = label;
+        const val = document.createElement('div');
+        val.className = 'value';
+        val.textContent = value;
+        box.appendChild(lab);
+        box.appendChild(val);
+        grid.appendChild(box);
+      });
+      document.getElementById('calcExplain').textContent = state.calc || '尚未開始計算。';
+    }
+
+    function escapeSvgText(text) {
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function renderSvg(state) {
+      const svg = document.getElementById('visualSvg');
+      const text = state.a || samples[currentSampleIndex].text;
+      const n = Math.max(1, text.length);
+      // 左側視覺化使用較大的字與較少空白，方便上課投影。
+      const chartW = 1000;
+      const chartH = 320;
+      const charW = Math.min(66, Math.max(40, 820 / n));
+      const boxW = charW - 6;
+      const startX = Math.max(40, (chartW - n * charW) / 2);
+      const charY = 78;
+      const segY = 188;
+      let html = `
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"></path>
+          </marker>
+        </defs>
+        <style>
+          .svgTitle{font:800 24px 'Microsoft JhengHei',sans-serif;fill:#172033;}
+          .svgText{font:700 20px 'Microsoft JhengHei',sans-serif;fill:#172033;}
+          .svgSmall{font:600 16px 'Microsoft JhengHei',sans-serif;fill:#475569;}
+          .charRect{fill:#ffffff;stroke:#94a3b8;stroke-width:2;rx:8;}
+          .charUpper{fill:#eff6ff;stroke:#93c5fd;}
+          .charLower{fill:#f0fdf4;stroke:#86efac;}
+          .charActive{stroke:#f59e0b;stroke-width:5;}
+          .segRect{fill:#ffffff;stroke:#64748b;stroke-width:2;rx:10;}
+          .segUpper{fill:#dbeafe;}
+          .segLower{fill:#dcfce7;}
+          .segCandidate{fill:#fef3c7;stroke:#f59e0b;stroke-width:5;}
+          .segExtra{fill:#fce7f3;stroke:#db2777;stroke-width:4;stroke-dasharray:8 5;}
+          .segActive{stroke:#dc2626;stroke-width:6;}
+          .pointer{stroke:#dc2626;stroke-width:4;marker-end:url(#arrow);}
+        </style>
+        <rect x="0" y="0" width="1000" height="320" fill="#ffffff"></rect>
+        <text x="40" y="34" class="svgTitle">原始字串 → uorl → seg</text>
+        <text x="40" y="60" class="svgSmall">目前階段：${escapeSvgText(state.phase || '-')}</text>
+        <text x="360" y="60" class="svgSmall">答案紀錄：longest = ${escapeSvgText(safe(state.longest))}</text>
+      `;
+
+      for (let i = 0; i < text.length; i++) {
+        const x = startX + i * charW;
+        const ch = text[i];
+        const val = state.uorl && i < state.uorl.length ? state.uorl[i] : null;
+        let cls = 'charRect ' + (isUpper(ch) ? 'charUpper' : 'charLower');
+        if (i === state.activeCharIndex || (state.comparePair && state.comparePair.includes(i))) cls += ' charActive';
+        html += `<rect class="${cls}" x="${x}" y="${charY}" width="${boxW}" height="62"></rect>`;
+        html += `<text x="${x + boxW / 2}" y="${charY + 27}" text-anchor="middle" class="svgText">${escapeSvgText(ch)}</text>`;
+        html += `<text x="${x + boxW / 2}" y="${charY + 52}" text-anchor="middle" class="svgSmall">${val === null ? '?' : val}</text>`;
+      }
+
+      html += `<text x="40" y="126" class="svgSmall">上排：字元；下方數字是 uorl 值</text>`;
+      html += `<text x="40" y="176" class="svgSmall">下排：seg 片段；每格寬度大約代表片段長度</text>`;
+
+      const types = computeSegTypesFromState(state);
+      let segX = startX;
+      for (let i = 0; i < (state.seg || []).length; i++) {
+        const len = state.seg[i];
+        const w = Math.max(54, len * charW - 7);
+        let cls = 'segRect ' + (types[i] === 0 ? 'segUpper' : 'segLower');
+        if (state.candidateStart !== null && i >= state.candidateStart && i <= state.candidateEnd) cls += ' segCandidate';
+        if (i === state.leftExtraIndex || i === state.rightExtraIndex) cls += ' segExtra';
+        if (i === state.activeSegIndex) cls += ' segActive';
+        html += `<rect class="${cls}" x="${segX}" y="${segY}" width="${w}" height="72"></rect>`;
+        html += `<text x="${segX + w / 2}" y="${segY + 28}" text-anchor="middle" class="svgText">seg[${i}]</text>`;
+        html += `<text x="${segX + w / 2}" y="${segY + 54}" text-anchor="middle" class="svgSmall">長度 ${len}｜${escapeSvgText(typeName(types[i]))}</text>`;
+        if (state.le === i) {
+          html += `<line class="pointer" x1="${segX + w / 2}" y1="${segY + 100}" x2="${segX + w / 2}" y2="${segY + 78}"></line>`;
+          html += `<text x="${segX + w / 2}" y="${segY + 122}" text-anchor="middle" class="svgText" fill="#dc2626">le</text>`;
+        }
+        if (state.ri === i) {
+          html += `<line class="pointer" x1="${segX + w / 2}" y1="${segY - 24}" x2="${segX + w / 2}" y2="${segY - 4}"></line>`;
+          html += `<text x="${segX + w / 2}" y="${segY - 30}" text-anchor="middle" class="svgText" fill="#dc2626">ri</text>`;
+        }
+        segX += len * charW;
+      }
+
+      if (!state.seg || state.seg.length === 0) {
+        html += `<rect x="340" y="180" width="420" height="72" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"></rect>`;
+        html += `<text x="500" y="230" text-anchor="middle" class="svgText">seg 尚未建立</text>`;
+      }
+
+      svg.innerHTML = html;
+    }
+
+    function renderStep() {
+      if (!steps.length) return;
+      if (stepIndex < 0) stepIndex = 0;
+      if (stepIndex >= steps.length) stepIndex = steps.length - 1;
+      const step = steps[stepIndex];
+      document.getElementById('stepLabel').textContent = `步驟 ${stepIndex + 1} / ${steps.length}`;
+      document.getElementById('resultLabel').textContent = '狀態：' + step.result;
+      document.getElementById('messageLabel').textContent = step.message;
+      renderCode(step.activeLine);
+      renderSummary(step);
+      renderCharList(step.state);
+      renderSegList(step.state);
+      renderVars(step.state);
+      renderSvg(step.state);
+      document.getElementById('prevBtn').disabled = stepIndex === 0;
+      document.getElementById('nextBtn').disabled = stepIndex === steps.length - 1;
+    }
+
+    function nextStep() {
+      if (stepIndex < steps.length - 1) {
+        stepIndex++;
+        renderStep();
+      } else {
+        pause();
+      }
+    }
+
+    function prevStep() {
+      if (stepIndex > 0) {
+        stepIndex--;
+        renderStep();
+      }
+    }
+
+    function reset() {
+      pause();
+      stepIndex = 0;
+      renderStep();
+    }
+
+    function play() {
+      if (timer) return;
+      timer = setInterval(nextStep, 900);
+    }
+
+    function pause() {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    }
+
+    function loadSample(index) {
+      currentSampleIndex = index;
+      pause();
+      steps = buildSteps(samples[currentSampleIndex]);
+      stepIndex = 0;
+      document.getElementById('sampleSelect').value = String(index);
+      renderStep();
+    }
+
+    function initSampleControls() {
+      const select = document.getElementById('sampleSelect');
+      select.textContent = '';
+      samples.forEach((s, idx) => {
+        const opt = document.createElement('option');
+        opt.value = String(idx);
+        opt.textContent = `${s.name}：k=${s.k}，${s.text}`;
+        select.appendChild(opt);
+      });
+      select.addEventListener('change', e => loadSample(Number(e.target.value)));
+
+      const buttons = document.getElementById('sampleButtons');
+      buttons.textContent = '';
+      samples.forEach((s, idx) => {
+        const btn = document.createElement('button');
+        btn.textContent = `${s.name}`;
+        btn.addEventListener('click', () => loadSample(idx));
+        buttons.appendChild(btn);
+      });
+
+      const tbody = document.getElementById('sampleTableBody');
+      tbody.textContent = '';
+      samples.forEach((s, idx) => {
+        const info = fullSegInfo(s.k, s.text);
+        const tr = document.createElement('tr');
+        const inputText = `${s.k}\n${s.text}`;
+        const cells = [s.name, inputText, String(s.answer), arrText(info.seg)];
+        cells.forEach((v, cidx) => {
+          const td = document.createElement('td');
+          if (cidx === 1) {
+            const pre = document.createElement('pre');
+            pre.style.margin = '0';
+            pre.textContent = v;
+            td.appendChild(pre);
+          } else {
+            td.textContent = v;
+          }
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    function initModal() {
+      const backdrop = document.getElementById('modalBackdrop');
+      const openBtn = document.getElementById('problemBtn');
+      const closeBtn = document.getElementById('closeModalBtn');
+      openBtn.addEventListener('click', () => {
+        backdrop.classList.add('show');
+        backdrop.setAttribute('aria-hidden', 'false');
+      });
+      closeBtn.addEventListener('click', () => {
+        backdrop.classList.remove('show');
+        backdrop.setAttribute('aria-hidden', 'true');
+      });
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) {
+          backdrop.classList.remove('show');
+          backdrop.setAttribute('aria-hidden', 'true');
+        }
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && backdrop.classList.contains('show')) {
+          backdrop.classList.remove('show');
+          backdrop.setAttribute('aria-hidden', 'true');
+        }
+      });
+    }
+
+    function initDragging() {
+      const gutter = document.getElementById('gutter');
+      const left = document.getElementById('leftPanel');
+      const workspace = document.querySelector('.workspace');
+      let dragging = false;
+      gutter.addEventListener('mousedown', (e) => {
+        dragging = true;
+        gutter.classList.add('dragging');
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const rect = workspace.getBoundingClientRect();
+        const min = 360;
+        const max = rect.width - 360;
+        let x = e.clientX - rect.left;
+        x = Math.max(min, Math.min(max, x));
+        left.style.flexBasis = x + 'px';
+      });
+      window.addEventListener('mouseup', () => {
+        dragging = false;
+        gutter.classList.remove('dragging');
+        document.body.style.userSelect = '';
+      });
+    }
+
+    function initKeyboard() {
+      document.addEventListener('keydown', (e) => {
+        const tag = (e.target && e.target.tagName || '').toLowerCase();
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+        if (document.getElementById('modalBackdrop').classList.contains('show')) return;
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          nextStep();
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          prevStep();
+        } else if (e.code === 'Space') {
+          e.preventDefault();
+          if (timer) pause(); else play();
+        }
+      });
+    }
+
+    document.getElementById('prevBtn').addEventListener('click', prevStep);
+    document.getElementById('nextBtn').addEventListener('click', nextStep);
+    document.getElementById('playBtn').addEventListener('click', play);
+    document.getElementById('pauseBtn').addEventListener('click', pause);
+    document.getElementById('resetBtn').addEventListener('click', reset);
+
+    initSampleControls();
+    initModal();
+    initDragging();
+    initKeyboard();
+    loadSample(0);
+  </script>
+</body>
+</html>

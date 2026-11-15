@@ -1,0 +1,2521 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>f580 骰子｜物件導向白話教學動畫</title>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)'], ['$', '$']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+  <style>
+    :root {
+      --toolbar-h: 112px;
+      --left-w: 54%;
+      --border: #d7dde8;
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #5f6b7a;
+      --primary: #1d4ed8;
+      --primary-soft: #dbeafe;
+      --active: #fff3bf;
+      --active-border: #f59e0b;
+      --done: #dcfce7;
+      --returning: #ede9fe;
+      --waiting: #f3f4f6;
+      --danger: #fee2e2;
+      --code-bg: #0f172a;
+      --code-text: #e5e7eb;
+      --code-line: #1e293b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    button, select {
+      font-family: inherit;
+      font-size: 15px;
+    }
+
+    #toolbar {
+      position: fixed;
+      z-index: 20;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+      padding: 10px 14px;
+    }
+
+    .toolbar-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .toolbar-row:last-child { margin-bottom: 0; }
+
+    .title {
+      font-weight: 800;
+      font-size: 20px;
+      margin-right: 10px;
+      white-space: nowrap;
+    }
+
+    .btn {
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #111827;
+      border-radius: 8px;
+      padding: 7px 11px;
+      cursor: pointer;
+    }
+
+    .btn:hover { background: #eef2ff; }
+    .btn.primary { background: var(--primary); color: white; border-color: var(--primary); }
+    .btn.danger { background: #fff1f2; border-color: #fecdd3; }
+
+    .select {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 7px 10px;
+      background: white;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 15px;
+      min-height: 34px;
+    }
+
+    #stepText, #resultText {
+      font-weight: 700;
+      color: #111827;
+    }
+
+    #messageText {
+      flex: 1 1 320px;
+      min-width: 260px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #111827;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: 10px;
+      padding: 8px 10px;
+      line-height: 1.45;
+    }
+
+    #main {
+      height: calc(100vh - var(--toolbar-h));
+      margin-top: var(--toolbar-h);
+      display: flex;
+      min-height: 0;
+    }
+
+    #leftPane {
+      width: var(--left-w);
+      min-width: 380px;
+      max-width: 78vw;
+      overflow: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #divider {
+      width: 9px;
+      cursor: col-resize;
+      background: linear-gradient(to right, #e5e7eb, #cbd5e1, #e5e7eb);
+      border-left: 1px solid #cbd5e1;
+      border-right: 1px solid #cbd5e1;
+      flex: 0 0 9px;
+    }
+
+    #rightPane {
+      flex: 1;
+      min-width: 360px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 14px 14px 14px 10px;
+    }
+
+    .card {
+      position: relative;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+    }
+
+    .card h2 {
+      margin: 0 0 8px 0;
+      font-size: 19px;
+      line-height: 1.4;
+    }
+
+    .card h3 {
+      margin: 10px 0 6px;
+      font-size: 17px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 15px;
+      margin: 4px 0 8px;
+    }
+
+    .important {
+      border-left: 5px solid var(--primary);
+      background: #eff6ff;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 17px;
+      margin: 8px 0;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    @media (max-width: 900px) {
+      #main { flex-direction: column; height: auto; min-height: calc(100vh - var(--toolbar-h)); }
+      #leftPane, #rightPane { width: 100%; max-width: none; min-width: 0; height: auto; }
+      #divider { display: none; }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+    }
+
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 7px 8px;
+      vertical-align: top;
+    }
+
+    th { background: #f8fafc; text-align: left; }
+
+    tr.active-row td {
+      background: var(--active);
+      border-color: #f59e0b;
+      font-weight: 700;
+    }
+
+    tr.done-row td { background: #f0fdf4; }
+
+    .mini-code {
+      font-family: Consolas, "Courier New", monospace;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 1px 5px;
+      font-size: 0.95em;
+      white-space: nowrap;
+    }
+
+    .sample-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sample-line {
+      display: grid;
+      grid-template-columns: 90px 1fr;
+      gap: 8px;
+      align-items: start;
+      border: 1px solid #e5e7eb;
+      border-radius: 9px;
+      padding: 7px 8px;
+      background: #ffffff;
+    }
+
+    .sample-line.active {
+      background: var(--active);
+      border-color: var(--active-border);
+      font-weight: 700;
+    }
+
+    .sample-raw {
+      font-family: Consolas, "Courier New", monospace;
+      background: #f8fafc;
+      border-radius: 6px;
+      padding: 3px 6px;
+      text-align: center;
+      white-space: pre;
+    }
+
+    .sample-explain { color: #111827; }
+
+    .svg-wrap {
+      width: 100%;
+      height: 430px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #fbfdff;
+      overflow: hidden;
+    }
+
+    #diceSvg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 14px;
+      color: #334155;
+      margin-top: 8px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: white;
+    }
+
+    .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      display: inline-block;
+      border: 1px solid #94a3b8;
+    }
+
+    .dot.waiting { background: var(--waiting); }
+    .dot.active { background: var(--active); border-color: var(--active-border); }
+    .dot.done { background: var(--done); border-color: #22c55e; }
+    .dot.returning { background: var(--returning); border-color: #8b5cf6; }
+
+    .state-box {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .state-chip {
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      background: #f8fafc;
+      padding: 6px 10px;
+      font-size: 15px;
+    }
+
+    #codeHeader {
+      flex: 0 0 auto;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 12px 12px 0 0;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    #codeHeader h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    #codeBox {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
+      background: var(--code-bg);
+      color: var(--code-text);
+      border: 1px solid var(--border);
+      border-radius: 0 0 12px 12px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 15px;
+      line-height: 1.55;
+      padding: 8px 0;
+    }
+
+    .code-line {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      min-height: 24px;
+      padding: 0 10px 0 0;
+      white-space: pre;
+    }
+
+    .code-line .ln {
+      color: #94a3b8;
+      text-align: right;
+      padding-right: 10px;
+      user-select: none;
+    }
+
+    .code-line .code-text { color: #e5e7eb; }
+
+    .code-line.active-code {
+      background: #fbbf24;
+      color: #111827;
+    }
+
+    .code-line.active-code .ln,
+    .code-line.active-code .code-text {
+      color: #111827;
+      font-weight: 800;
+    }
+
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      z-index: 40;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      padding: 24px;
+    }
+
+    .modal-backdrop.open { display: flex; align-items: flex-start; justify-content: center; }
+
+    .modal {
+      width: min(980px, 96vw);
+      max-height: 70vh;
+      overflow: auto;
+      background: white;
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+      line-height: 1.65;
+    }
+
+    .modal h2 { margin-top: 0; }
+    .modal .close-row { display: flex; justify-content: flex-end; position: sticky; top: 0; background: white; padding-bottom: 8px; }
+
+    .kbd {
+      font-family: Consolas, "Courier New", monospace;
+      border: 1px solid #cbd5e1;
+      border-bottom-width: 2px;
+      border-radius: 6px;
+      padding: 1px 6px;
+      background: #f8fafc;
+      font-size: 14px;
+    }
+
+    .scroll-section {
+      max-height: 260px;
+      overflow: auto;
+    }
+
+
+    .core-card {
+      border-left: 6px solid #2563eb;
+      background: #f8fbff;
+    }
+
+    .core-sentence {
+      font-size: 19px;
+      font-weight: 900;
+      color: #1d4ed8;
+      background: #dbeafe;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 9px 11px;
+      margin: 6px 0 10px;
+    }
+
+    .method-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 900;
+      font-size: 18px;
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      border-radius: 999px;
+      padding: 6px 12px;
+      margin: 4px 0 8px;
+    }
+
+    .move-banner {
+      background: #fff7ed;
+      border: 2px solid #fb923c;
+      border-radius: 12px;
+      padding: 9px 11px;
+      font-size: 18px;
+      font-weight: 800;
+      margin: 8px 0;
+    }
+
+    .faces-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      margin: 7px 0;
+    }
+
+    .faces-label {
+      min-width: 92px;
+      font-weight: 800;
+      color: #334155;
+    }
+
+    .face-cell {
+      min-width: 52px;
+      text-align: center;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 5px 6px;
+      font-family: Consolas, "Courier New", monospace;
+      font-weight: 800;
+    }
+
+    .face-cell small {
+      display: block;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+      font-weight: 700;
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.1;
+    }
+
+    .face-cell.active {
+      background: var(--active);
+      border-color: var(--active-border);
+      outline: 2px solid rgba(245, 158, 11, 0.28);
+    }
+
+    .face-cell.done {
+      background: #dcfce7;
+      border-color: #22c55e;
+    }
+
+    .face-cell.empty {
+      background: #f8fafc;
+      color: #94a3b8;
+      border-style: dashed;
+    }
+
+    .arrow-note {
+      color: #475569;
+      font-weight: 800;
+      margin: 0 4px;
+    }
+
+    .small-note {
+      font-size: 15px;
+      color: #475569;
+      margin-top: 6px;
+    }
+
+
+    /* Three.js 3D 教學區：畫布與說明使用正常文流，不與其他卡片重疊。 */
+    .three-card {
+      border-left: 6px solid #0f766e;
+      background: #f7fffd;
+    }
+
+    .three-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin: 8px 0 10px;
+    }
+
+    .three-status-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .three-status-item {
+      border: 1px solid #ccddd8;
+      border-radius: 9px;
+      background: #ffffff;
+      padding: 7px 9px;
+      min-height: 62px;
+    }
+
+    .three-status-item small {
+      display: block;
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .three-status-item strong {
+      display: block;
+      color: #0f172a;
+      font-size: 16px;
+      line-height: 1.45;
+    }
+
+    .three-rule-banner {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      margin: 8px 0 10px;
+      border: 1px solid #93c5bd;
+      border-left: 5px solid #0f766e;
+      border-radius: 10px;
+      background: #ecfdf5;
+      padding: 9px 11px;
+    }
+
+    .three-rule-banner small {
+      color: #475569;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .three-rule-banner strong {
+      color: #064e3b;
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    .three-top-direction {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      width: 100%;
+      min-height: 58px;
+      margin: 2px 0 6px;
+      color: #065f46;
+      text-align: center;
+    }
+
+    .three-top-direction strong {
+      display: inline-block;
+      border: 1px solid #86cbbb;
+      border-radius: 999px;
+      background: #ffffff;
+      padding: 6px 13px;
+      font-size: 17px;
+      line-height: 1.35;
+    }
+
+    .three-top-direction-arrow {
+      color: #0f766e;
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .three-canvas-wrap {
+      position: relative;
+      width: 100%;
+      height: 400px;
+      border: 1px solid #b8d8d0;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #eefbf8;
+    }
+
+    #threeDiceCanvasHost {
+      width: 100%;
+      height: 100%;
+      min-height: 400px;
+    }
+
+    #threeDiceCanvasHost canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .three-fallback {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+      color: #475569;
+      font-size: 17px;
+      line-height: 1.7;
+    }
+
+    .direction-guide {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(70px, 1fr));
+      gap: 6px;
+      margin-top: 9px;
+    }
+
+    .direction-guide span {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 5px 6px;
+      text-align: center;
+      font-weight: 800;
+      color: #334155;
+      font-size: 14px;
+    }
+
+    .three-explain {
+      margin-top: 10px;
+      border: 1px solid #99d5c8;
+      border-radius: 12px;
+      background: #ecfdf5;
+      padding: 10px 11px;
+    }
+
+    .three-explain-main {
+      font-size: 18px;
+      font-weight: 900;
+      color: #065f46;
+      line-height: 1.55;
+      margin-bottom: 6px;
+    }
+
+    .three-explain-sub {
+      color: #334155;
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    .three-list-compare {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 54px minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .three-list-box {
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      background: #ffffff;
+      padding: 8px;
+      overflow-x: auto;
+    }
+
+    .three-list-box small {
+      display: block;
+      color: #64748b;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .three-list-value {
+      font-family: Consolas, "Courier New", monospace;
+      font-weight: 900;
+      font-size: 17px;
+      white-space: nowrap;
+    }
+
+    .three-list-arrow {
+      font-size: 28px;
+      text-align: center;
+      color: #0f766e;
+      font-weight: 900;
+    }
+
+    .three-progress {
+      height: 12px;
+      border-radius: 999px;
+      background: #dbe7e4;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    #threeProgressBar {
+      height: 100%;
+      width: 0%;
+      background: #0f766e;
+      transition: width 180ms ease;
+    }
+
+    .three-face-table-wrap {
+      margin-top: 10px;
+      overflow-x: auto;
+    }
+
+    .three-face-table {
+      min-width: 650px;
+      table-layout: fixed;
+      font-size: 15px;
+    }
+
+    .three-face-table th,
+    .three-face-table td {
+      text-align: center;
+      vertical-align: middle;
+      padding: 7px 5px;
+    }
+
+    .three-face-table th:first-child,
+    .three-face-table td:first-child {
+      width: 104px;
+      font-weight: 900;
+      background: #f8fafc;
+    }
+
+    .three-face-table td.move-source {
+      background: #ffedd5;
+      border: 2px solid #f97316;
+      font-weight: 900;
+      color: #9a3412;
+    }
+
+    .three-face-table td.move-target {
+      background: #dcfce7;
+      border: 2px solid #16a34a;
+      font-weight: 900;
+      color: #166534;
+    }
+
+    .three-face-table td.read-top {
+      background: #fef3c7;
+      border: 2px solid #d97706;
+      font-weight: 900;
+      color: #92400e;
+    }
+
+    @media (max-width: 900px) {
+      .three-status-grid { grid-template-columns: 1fr; }
+      .direction-guide { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .three-list-compare { grid-template-columns: 1fr; }
+      .three-list-arrow { transform: rotate(90deg); }
+      .three-canvas-wrap, #threeDiceCanvasHost { height: 345px; min-height: 345px; }
+    }
+
+  </style>
+</head>
+<body>
+  <header id="toolbar">
+    <div class="toolbar-row">
+      <div class="title">f580 骰子｜物件導向白話教學動畫</div>
+      <button class="btn" id="problemBtn">題目說明</button>
+      <label>範例：
+        <select class="select" id="sampleSelect"></select>
+      </label>
+      <button class="btn" id="prevBtn">上一步</button>
+      <button class="btn primary" id="nextBtn">下一步</button>
+      <button class="btn" id="playBtn">播放</button>
+      <button class="btn danger" id="resetBtn">重設</button>
+      <label>速度：
+        <select class="select" id="speedSelect">
+          <option value="2200">慢速</option>
+          <option value="1600" selected>普通</option>
+          <option value="900">快速</option>
+        </select>
+      </label>
+    </div>
+    <div class="toolbar-row">
+      <span class="status-pill">目前步驟：<span id="stepText">步驟 1 / 1</span></span>
+      <span class="status-pill">目前狀態：<span id="resultText">尚未開始</span></span>
+      <div id="messageText">準備開始。</div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section id="leftPane" aria-label="視覺化區">
+      <section class="card">
+        <h2>1. 先看懂輸入數字</h2>
+        <div id="samplePanel" class="sample-lines"></div>
+      </section>
+
+      <section class="card">
+        <h2>2. Dice 物件怎麼記一顆骰子</h2>
+        <div class="important">
+          <span class="mini-code">self.faces</span> 裡面不是單純的 1 到 6。它是在記錄「哪個點數現在在哪個方向」。
+        </div>
+        <div class="grid-2">
+          <div>
+            <h3>固定順序</h3>
+            <table>
+              <thead><tr><th>index</th><th>方向</th><th>白話意思</th></tr></thead>
+              <tbody>
+                <tr><td>0</td><td>上</td><td>最後要輸出的點數</td></tr>
+                <tr><td>1</td><td>右</td><td>骰子右邊</td></tr>
+                <tr><td>2</td><td>後</td><td>骰子後面</td></tr>
+                <tr><td>3</td><td>前</td><td>骰子前面</td></tr>
+                <tr><td>4</td><td>左</td><td>骰子左邊</td></tr>
+                <tr><td>5</td><td>下</td><td>骰子下面</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <h3>一開始</h3>
+            <p class="hint">每顆 Dice 剛建立時，都會執行 <span class="mini-code">__init__()</span>。</p>
+            <table>
+              <thead><tr><th>方向</th><th>點數</th></tr></thead>
+              <tbody>
+                <tr><td>上</td><td>1</td></tr>
+                <tr><td>右</td><td>2</td></tr>
+                <tr><td>後</td><td>3</td></tr>
+                <tr><td>前</td><td>4</td></tr>
+                <tr><td>左</td><td>5</td></tr>
+                <tr><td>下</td><td>6</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+
+
+      <section class="card core-card">
+        <h2>3. 核心觀念：方向固定，點數搬家</h2>
+        <div class="core-sentence">faces 的 6 個位置固定不變，但每次滾動時，點數會搬到新的方向。</div>
+        <p class="hint">例如往前滾時，後面的點數會跑到上面；上面的點數會跑到前面；前面的點數會跑到下面。</p>
+        <div id="coreMovePanel"></div>
+      </section>
+
+      <section class="card three-card">
+        <h2>4. Three.js 3D 骰子：看懂實際滾動與 List 變化</h2>
+        <div class="important">
+          這裡把同一件事分成兩層同步呈現：上方 3D 骰子顯示「哪一面滾到哪裡」，下方 List 顯示 <span class="mini-code">faces</span> 怎麼重新排列。
+        </div>
+
+        <div class="three-status-grid">
+          <div class="three-status-item"><small>目前顯示</small><strong id="threeDicePosition">等待建立骰子</strong></div>
+          <div class="three-status-item"><small>目前方法</small><strong id="threeMethodText">尚未進入方法</strong></div>
+          <div class="three-status-item"><small>旋轉進度</small><strong id="threeProgressText">0° / 90°</strong></div>
+        </div>
+
+        <div class="three-rule-banner">
+          <small>目前完整方向規則</small>
+          <strong id="threeRuleText">尚未進入滾動方法。方向位置固定，點數會搬家。</strong>
+        </div>
+
+        <div class="three-toolbar">
+          <button class="btn" id="replayThreeBtn" type="button">重播本次 3D 滾動</button>
+          <button class="btn" id="resetThreeViewBtn" type="button">重設 3D 視角</button>
+          <span class="hint">攝影機固定，避免前、後、左、右被轉亂。</span>
+        </div>
+
+        <div class="three-top-direction" aria-label="上方方向標示">
+          <strong id="threeTopDirectionText">上：faces[0]（+Y）</strong>
+          <span class="three-top-direction-arrow" aria-hidden="true">↓</span>
+        </div>
+
+        <div class="three-canvas-wrap">
+          <div id="threeDiceCanvasHost" aria-label="Three.js 3D 骰子動畫">
+            <div id="threeFallback" class="three-fallback">正在準備 3D 骰子。若 Three.js 無法載入，下方 SVG 與 List 教學仍可正常使用。</div>
+          </div>
+        </div>
+
+        <div class="direction-guide" aria-label="方向對照">
+          <span>上：faces[0]</span>
+          <span>右：faces[1]</span>
+          <span>後：faces[2]</span>
+          <span>前：faces[3]</span>
+          <span>左：faces[4]</span>
+          <span>下：faces[5]</span>
+        </div>
+
+        <div class="three-explain">
+          <div id="threeExplainMain" class="three-explain-main">方向位置固定，點數會搬家。</div>
+          <div id="threeExplainSub" class="three-explain-sub">動畫進入 roll_front()、roll_right() 或 up() 時，這裡會說明目前哪個點數從哪裡移到哪裡。</div>
+          <div class="three-progress"><div id="threeProgressBar"></div></div>
+        </div>
+
+        <div class="three-list-compare">
+          <div class="three-list-box">
+            <small id="threeOldLabel">目前 faces</small>
+            <div id="threeOldFaces" class="three-list-value">尚未建立</div>
+          </div>
+          <div class="three-list-arrow">→</div>
+          <div class="three-list-box">
+            <small id="threeNewLabel">List 狀態</small>
+            <div id="threeNewFaces" class="three-list-value">尚未建立</div>
+          </div>
+        </div>
+
+        <h3>List 六格方向對照</h3>
+        <div id="threeFaceTable" class="three-face-table-wrap"></div>
+      </section>
+
+      <section class="card">
+        <h2>5. 全部骰子位置與物件狀態</h2>
+        <div class="svg-wrap">
+          <svg id="diceSvg" viewBox="0 0 1000 360" preserveAspectRatio="xMidYMid meet" role="img" aria-label="骰子視覺化"></svg>
+        </div>
+        <div class="legend">
+          <span class="legend-item"><span class="dot waiting"></span>尚未處理</span>
+          <span class="legend-item"><span class="dot active"></span>目前處理中</span>
+          <span class="legend-item"><span class="dot done"></span>已完成</span>
+          <span class="legend-item"><span class="dot returning"></span>回傳中</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>6. 目前重要狀態</h2>
+        <div id="stateChips" class="state-box"></div>
+      </section>
+
+      <section class="card">
+        <h2>7. 操作清單 works</h2>
+        <div class="hint">程式會照著 works，一筆一筆做。每筆資料都是 <span class="mini-code">a b</span>。</div>
+        <div id="worksTable" class="scroll-section"></div>
+      </section>
+
+      <section class="card">
+        <h2>8. 目前方法：骰子變化與 List 變化</h2>
+        <div id="methodPanel"></div>
+      </section>
+
+      <section class="card">
+        <h2>9. 每個位置現在放哪一顆 Dice 物件</h2>
+        <div class="hint">位置像椅子，Dice 物件像坐在椅子上的人。交換時，是兩個人換椅子。</div>
+        <div id="dicesTable" class="scroll-section"></div>
+      </section>
+    </section>
+
+    <div id="divider" title="拖曳調整左右寬度"></div>
+
+    <section id="rightPane" aria-label="程式碼區">
+      <div id="codeHeader">
+        <h2>完整 Python 程式碼</h2>
+        <span class="hint">鍵盤：<span class="kbd">←</span> 上一步，<span class="kbd">→</span> 下一步，<span class="kbd">Space</span> 播放 / 暫停</span>
+      </div>
+      <div id="codeBox"></div>
+    </section>
+  </main>
+
+  <div id="problemModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="problemTitle">
+      <div class="close-row"><button class="btn danger" id="closeModalBtn">關閉</button></div>
+      <h2 id="problemTitle">題目說明：骰子</h2>
+      <p>有 n 顆骰子排成一列。每顆骰子一開始的方向都一樣：上面是 1，右邊是 2，前面是 4。</p>
+      <p>程式用一個 Dice 物件代表一顆骰子。Dice 裡面有 <span class="mini-code">self.faces</span>，順序固定為：</p>
+      <p><span class="mini-code">[上, 右, 後, 前, 左, 下]</span></p>
+
+      <h3>核心觀念：方向固定，點數搬家</h3>
+      <p><strong>faces 的位置永遠固定：</strong><span class="mini-code">[上, 右, 後, 前, 左, 下]</span>。</p>
+      <p>滾動時不是點數變了，而是同一個點數搬到新的方向。</p>
+      <table>
+        <thead><tr><th>方法</th><th>List 更新</th><th>白話重點</th></tr></thead>
+        <tbody>
+          <tr><td><span class="mini-code">roll_front()</span></td><td><span class="mini-code">[back, r, d, u, l, front]</span></td><td>後→上，上→前，前→下，下→後；左右不變。</td></tr>
+          <tr><td><span class="mini-code">roll_right()</span></td><td><span class="mini-code">[l, u, back, front, d, r]</span></td><td>左→上，上→右，右→下，下→左；前後不變。</td></tr>
+          <tr><td><span class="mini-code">up()</span></td><td><span class="mini-code">return self.faces[0]</span></td><td>只看目前上面的點數，不改變骰子。</td></tr>
+        </tbody>
+      </table>
+
+      <h3>輸入格式</h3>
+      <p>第一行有兩個整數：</p>
+      <ul>
+        <li><strong>n</strong>：有幾顆骰子。</li>
+        <li><strong>m</strong>：有幾筆操作。</li>
+      </ul>
+      <p>接下來 m 行，每行有兩個整數 <span class="mini-code">a b</span>：</p>
+      <ul>
+        <li><strong>b 是正整數</strong>：交換第 a 個位置和第 b 個位置的骰子。</li>
+        <li><strong>b = -1</strong>：第 a 個位置的骰子往前滾。</li>
+        <li><strong>b = -2</strong>：第 a 個位置的骰子往右滾。</li>
+      </ul>
+
+      <h3>輸出格式</h3>
+      <p>全部操作做完後，從第 1 個位置到第 n 個位置，輸出每顆骰子朝上的點數。</p>
+      <p>在物件導向寫法中，就是呼叫：</p>
+      <p><span class="mini-code">dices[i].up()</span></p>
+
+      <h3>範例 1 逐行解讀</h3>
+      <table>
+        <thead><tr><th>輸入行</th><th>意思</th></tr></thead>
+        <tbody>
+          <tr><td><span class="mini-code">1 2</span></td><td>有 1 顆骰子，要做 2 筆操作。</td></tr>
+          <tr><td><span class="mini-code">1 -2</span></td><td>第 1 顆骰子往右滾。</td></tr>
+          <tr><td><span class="mini-code">1 -1</span></td><td>第 1 顆骰子往前滾。</td></tr>
+          <tr><td><span class="mini-code">輸出 3</span></td><td>最後第 1 顆骰子朝上是 3。</td></tr>
+        </tbody>
+      </table>
+
+      <h3>範例 2 逐行解讀</h3>
+      <table>
+        <thead><tr><th>輸入行</th><th>意思</th></tr></thead>
+        <tbody>
+          <tr><td><span class="mini-code">3 3</span></td><td>有 3 顆骰子，要做 3 筆操作。</td></tr>
+          <tr><td><span class="mini-code">2 -1</span></td><td>第 2 顆骰子往前滾。</td></tr>
+          <tr><td><span class="mini-code">3 -2</span></td><td>第 3 顆骰子往右滾。</td></tr>
+          <tr><td><span class="mini-code">3 1</span></td><td>交換第 3 個位置和第 1 個位置的骰子。</td></tr>
+          <tr><td><span class="mini-code">輸出 5 3 1</span></td><td>最後三個位置朝上的點數依序是 5、3、1。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const codeLines = [
+      'class Dice:',
+      '    def __init__(self):',
+      '        # 順序固定是：上、右、後、前、左、下',
+      '        self.faces = [1, 2, 3, 4, 5, 6]',
+      '',
+      '    def up(self):',
+      '        # faces[0] 的位置固定代表「上面」',
+      '        # up() 只讀取上面的點數，不會改變骰子或 List',
+      '        return self.faces[0]',
+      '',
+      '    def roll_front(self):',
+      '        # 往前滾',
+      '        # faces 順序固定是：[上, 右, 後, 前, 左, 下]',
+      '        u, r, back, front, l, d = self.faces',
+      '',
+      '        # 往前滾時，點數的方向變化：',
+      '        # 後 → 上',
+      '        # 上 → 前',
+      '        # 前 → 下',
+      '        # 下 → 後',
+      '        # 右、左不變',
+      '',
+      '        # 新方向：[新上, 新右, 新後, 新前, 新左, 新下]',
+      '        # 舊來源：[舊後, 舊右, 舊下, 舊上, 舊左, 舊前]',
+      '        self.faces = [back, r, d, u, l, front]',
+      '',
+      '    def roll_right(self):',
+      '        # 往右滾',
+      '        # faces 順序固定是：[上, 右, 後, 前, 左, 下]',
+      '        u, r, back, front, l, d = self.faces',
+      '',
+      '        # 往右滾時，點數的方向變化：',
+      '        # 左 → 上',
+      '        # 上 → 右',
+      '        # 右 → 下',
+      '        # 下 → 左',
+      '        # 後、前不變',
+      '',
+      '        # 新方向：[新上, 新右, 新後, 新前, 新左, 新下]',
+      '        # 舊來源：[舊左, 舊上, 舊後, 舊前, 舊下, 舊右]',
+      '        self.faces = [l, u, back, front, d, r]',
+      '',
+      '',
+      'n, m = map(int, input().split())',
+      '',
+      'works = []',
+      'for _ in range(m):',
+      '    works.append(list(map(int, input().split())))',
+      '',
+      '# 建立 n 顆骰子，前面放 None 是為了讓骰子從 1 開始編號',
+      'dices = [None] + [Dice() for _ in range(n)]',
+      '',
+      'for a, b in works:',
+      '    if b > 0:',
+      '        # 交換第 a 顆和第 b 顆骰子',
+      '        dices[a], dices[b] = dices[b], dices[a]',
+      '',
+      '    elif b == -1:',
+      '        # 第 a 顆骰子往前滾',
+      '        dices[a].roll_front()',
+      '',
+      '    elif b == -2:',
+      '        # 第 a 顆骰子往右滾',
+      '        dices[a].roll_right()',
+      '',
+      'for i in range(1, n + 1):',
+      "    print(dices[i].up(), end=' ')"
+    ];
+
+    function codeLineOf(text, occurrence = 1) {
+      let count = 0;
+      for (let i = 0; i < codeLines.length; i++) {
+        if (codeLines[i] === text) {
+          count += 1;
+          if (count === occurrence) return i + 1;
+        }
+      }
+      throw new Error(`找不到程式碼行：${text}`);
+    }
+
+    const CODE = {
+      classDef: codeLineOf('class Dice:'),
+      initDef: codeLineOf('    def __init__(self):'),
+      initFaces: codeLineOf('        self.faces = [1, 2, 3, 4, 5, 6]'),
+      upDef: codeLineOf('    def up(self):'),
+      upReturn: codeLineOf('        return self.faces[0]'),
+      frontDef: codeLineOf('    def roll_front(self):'),
+      frontUnpack: codeLineOf('        u, r, back, front, l, d = self.faces', 1),
+      frontRules: [
+        codeLineOf('        # 後 → 上'),
+        codeLineOf('        # 上 → 前'),
+        codeLineOf('        # 前 → 下'),
+        codeLineOf('        # 下 → 後'),
+        codeLineOf('        # 右、左不變')
+      ],
+      frontAssign: codeLineOf('        self.faces = [back, r, d, u, l, front]'),
+      rightDef: codeLineOf('    def roll_right(self):'),
+      rightUnpack: codeLineOf('        u, r, back, front, l, d = self.faces', 2),
+      rightRules: [
+        codeLineOf('        # 左 → 上'),
+        codeLineOf('        # 上 → 右'),
+        codeLineOf('        # 右 → 下'),
+        codeLineOf('        # 下 → 左'),
+        codeLineOf('        # 後、前不變')
+      ],
+      rightAssign: codeLineOf('        self.faces = [l, u, back, front, d, r]'),
+      inputNM: codeLineOf('n, m = map(int, input().split())'),
+      worksInit: codeLineOf('works = []'),
+      worksFor: codeLineOf('for _ in range(m):'),
+      worksAppend: codeLineOf('    works.append(list(map(int, input().split())))'),
+      diceCreate: codeLineOf('dices = [None] + [Dice() for _ in range(n)]'),
+      opsFor: codeLineOf('for a, b in works:'),
+      ifSwap: codeLineOf('    if b > 0:'),
+      swap: codeLineOf('        dices[a], dices[b] = dices[b], dices[a]'),
+      elifFront: codeLineOf('    elif b == -1:'),
+      callFront: codeLineOf('        dices[a].roll_front()'),
+      elifRight: codeLineOf('    elif b == -2:'),
+      callRight: codeLineOf('        dices[a].roll_right()'),
+      outputFor: codeLineOf('for i in range(1, n + 1):'),
+      outputPrint: codeLineOf("    print(dices[i].up(), end=' ')")
+    };
+
+    const faceLabels = ['上', '右', '後', '前', '左', '下'];
+
+    const rollRules = {
+      front: {
+        title: 'roll_front()：往前滾',
+        shortTitle: '往前滾',
+        code: 'self.faces = [back, r, d, u, l, front]',
+        summary: '後→上，上→前，前→下，下→後；右、左不變。',
+        rows: [
+          { toLabel: '新上', toIndex: 0, fromLabel: '舊後', fromIndex: 2, varName: 'back', plain: '後面的點數變上面' },
+          { toLabel: '新右', toIndex: 1, fromLabel: '舊右', fromIndex: 1, varName: 'r', plain: '右邊的點數不變' },
+          { toLabel: '新後', toIndex: 2, fromLabel: '舊下', fromIndex: 5, varName: 'd', plain: '下面的點數變後面' },
+          { toLabel: '新前', toIndex: 3, fromLabel: '舊上', fromIndex: 0, varName: 'u', plain: '上面的點數變前面' },
+          { toLabel: '新左', toIndex: 4, fromLabel: '舊左', fromIndex: 4, varName: 'l', plain: '左邊的點數不變' },
+          { toLabel: '新下', toIndex: 5, fromLabel: '舊前', fromIndex: 3, varName: 'front', plain: '前面的點數變下面' }
+        ]
+      },
+      right: {
+        title: 'roll_right()：往右滾',
+        shortTitle: '往右滾',
+        code: 'self.faces = [l, u, back, front, d, r]',
+        summary: '左→上，上→右，右→下，下→左；後、前不變。',
+        rows: [
+          { toLabel: '新上', toIndex: 0, fromLabel: '舊左', fromIndex: 4, varName: 'l', plain: '左邊的點數變上面' },
+          { toLabel: '新右', toIndex: 1, fromLabel: '舊上', fromIndex: 0, varName: 'u', plain: '上面的點數變右邊' },
+          { toLabel: '新後', toIndex: 2, fromLabel: '舊後', fromIndex: 2, varName: 'back', plain: '後面的點數不變' },
+          { toLabel: '新前', toIndex: 3, fromLabel: '舊前', fromIndex: 3, varName: 'front', plain: '前面的點數不變' },
+          { toLabel: '新左', toIndex: 4, fromLabel: '舊下', fromIndex: 5, varName: 'd', plain: '下面的點數變左邊' },
+          { toLabel: '新下', toIndex: 5, fromLabel: '舊右', fromIndex: 1, varName: 'r', plain: '右邊的點數變下面' }
+        ]
+      }
+    };
+
+    const samples = [
+      {
+        name: '範例 1',
+        inputLines: ['1 2', '1 -2', '1 -1'],
+        n: 1,
+        m: 2,
+        ops: [[1, -2], [1, -1]],
+        output: '3',
+        explanations: [
+          'n=1：有 1 顆骰子；m=2：接下來有 2 筆操作。',
+          'a=1：處理第 1 顆；b=-2：這顆骰子往右滾。',
+          'a=1：處理第 1 顆；b=-1：這顆骰子往前滾。'
+        ]
+      },
+      {
+        name: '範例 2',
+        inputLines: ['3 3', '2 -1', '3 -2', '3 1'],
+        n: 3,
+        m: 3,
+        ops: [[2, -1], [3, -2], [3, 1]],
+        output: '5 3 1',
+        explanations: [
+          'n=3：有 3 顆骰子；m=3：接下來有 3 筆操作。',
+          'a=2：處理第 2 顆；b=-1：這顆骰子往前滾。',
+          'a=3：處理第 3 顆；b=-2：這顆骰子往右滾。',
+          'a=3、b=1：因為 b 是正整數，所以交換第 3 和第 1 個位置的骰子。'
+        ]
+      }
+    ];
+
+    let currentSampleIndex = 0;
+    let steps = [];
+    let stepIndex = 0;
+    let timer = null;
+
+    function cloneFaces(faces) {
+      return faces ? faces.slice() : null;
+    }
+
+    function cloneDices(dices) {
+      return dices.map(cloneFaces);
+    }
+
+    function opText(op) {
+      if (!op) return '尚未讀取';
+      const [a, b] = op;
+      if (b > 0) return `a=${a}, b=${b}：交換位置 ${a} 與位置 ${b} 的整顆 Dice 物件`;
+      if (b === -1) return `a=${a}, b=-1：位置 ${a} 的 Dice 往前滾`;
+      if (b === -2) return `a=${a}, b=-2：位置 ${a} 的 Dice 往右滾`;
+      return `a=${a}, b=${b}`;
+    }
+
+    function makeStepFactory(sample) {
+      const localSteps = [];
+      let state = {
+        n: null,
+        m: null,
+        works: [],
+        dices: [],
+        output: [],
+        currentOpIndex: -1,
+        currentInputLine: -1,
+        activeDice: null,
+        phase: 'waiting',
+        method: 'none',
+        oldFaces: null,
+        newFaces: null,
+        partialFaces: null,
+        activeMove: null,
+        methodStage: '',
+        swapInfo: null,
+        note: ''
+      };
+
+      function push(activeLine, message, result, patch = {}) {
+        const merged = Object.assign({}, state, patch);
+        localSteps.push({
+          activeLine,
+          message,
+          result,
+          n: merged.n,
+          m: merged.m,
+          works: merged.works.map(x => x.slice()),
+          dices: cloneDices(merged.dices),
+          output: merged.output.slice(),
+          currentOpIndex: merged.currentOpIndex,
+          currentInputLine: merged.currentInputLine,
+          activeDice: merged.activeDice,
+          phase: merged.phase,
+          method: merged.method,
+          oldFaces: cloneFaces(merged.oldFaces),
+          newFaces: cloneFaces(merged.newFaces),
+          partialFaces: cloneFaces(merged.partialFaces),
+          activeMove: merged.activeMove ? Object.assign({}, merged.activeMove) : null,
+          methodStage: merged.methodStage || '',
+          swapInfo: merged.swapInfo ? Object.assign({}, merged.swapInfo) : null,
+          note: merged.note || ''
+        });
+        state = merged;
+      }
+
+      push(CODE.classDef, '先看到 class Dice。這是一張「骰子設計圖」，還沒有真的產生骰子。', '準備 Dice 類別', { phase: 'waiting' });
+      push([CODE.initDef, CODE.upDef, CODE.frontDef, CODE.rightDef], '這些 def 是把方法準備好：初始化、看上面、往前滾、往右滾。', '方法準備中', { phase: 'waiting' });
+
+      state.n = sample.n;
+      state.m = sample.m;
+      push(CODE.inputNM, `讀第一行「${sample.inputLines[0]}」：n=${sample.n} 顆骰子，m=${sample.m} 筆操作。`, `n=${sample.n}, m=${sample.m}`, { currentInputLine: 0 });
+
+      state.works = [];
+      push(CODE.worksInit, '建立空的 works。它等等會裝全部操作。', 'works = []');
+
+      sample.ops.forEach((op, idx) => {
+        push(CODE.worksFor, `準備讀第 ${idx + 1} 筆操作。`, `讀操作 ${idx + 1} / ${sample.m}`, { currentInputLine: idx + 1, currentOpIndex: idx });
+        state.works = state.works.concat([op.slice()]);
+        push(CODE.worksAppend, `讀到「${sample.inputLines[idx + 1]}」：${opText(op)}。`, `works 已有 ${idx + 1} 筆`, { currentInputLine: idx + 1, currentOpIndex: idx });
+      });
+
+      push(CODE.diceCreate, '建立 dices。前面放 None，讓位置可以從 1 開始數。', '準備建立 Dice 物件', { currentInputLine: -1, currentOpIndex: -1, activeDice: null });
+      state.dices = [null];
+      for (let i = 1; i <= sample.n; i++) {
+        state.dices[i] = [1, 2, 3, 4, 5, 6];
+        push(CODE.initFaces, `建立第 ${i} 顆 Dice，執行 __init__，faces 變成 [1,2,3,4,5,6]。`, `第 ${i} 顆 Dice 建立完成`, { activeDice: i, phase: 'active' });
+      }
+      push(CODE.diceCreate, `全部 ${sample.n} 顆 Dice 都建立完成。`, '骰子建立完成', { activeDice: null, phase: 'done' });
+
+
+      function addRollMoveSteps(method, a, old, next, enterLine, unpackLine, ruleLines, assignLine) {
+        const rule = rollRules[method];
+        const methodNameText = method === 'front' ? 'roll_front' : 'roll_right';
+        push(enterLine, `進入 ${methodNameText} 方法。先看這顆 Dice 目前的 faces。`, '進入方法', {
+          method,
+          methodStage: 'enter',
+          oldFaces: old,
+          newFaces: null,
+          partialFaces: null,
+          activeMove: null,
+          activeDice: a,
+          phase: 'active'
+        });
+        push(unpackLine, `把舊 faces 拆開：u=${old[0]}, r=${old[1]}, back=${old[2]}, front=${old[3]}, l=${old[4]}, d=${old[5]}。`, '拆開舊 faces', {
+          method,
+          methodStage: 'unpack',
+          oldFaces: old,
+          newFaces: null,
+          partialFaces: null,
+          activeMove: null,
+          activeDice: a,
+          phase: 'waiting'
+        });
+
+        const partial = [null, null, null, null, null, null];
+        rule.rows.forEach((move, moveIndex) => {
+          const value = old[move.fromIndex];
+          partial[move.toIndex] = value;
+          push(ruleLines.concat([assignLine]), `點數搬家 ${moveIndex + 1}/6：${move.plain}，所以 ${move.toLabel} = ${move.fromLabel} = ${value}。`, `${rule.shortTitle}：${move.plain}`, {
+            method,
+            methodStage: 'move',
+            oldFaces: old,
+            newFaces: null,
+            partialFaces: partial.slice(),
+            activeMove: Object.assign({ value, order: moveIndex + 1, total: 6 }, move),
+            activeDice: a,
+            phase: 'active'
+          });
+        });
+
+        state.dices[a] = next;
+        push(ruleLines.concat([assignLine]), `${rule.title} 完成。舊 faces [${old.join(', ')}] 變成新 faces [${next.join(', ')}]。`, `${rule.shortTitle}完成`, {
+          method,
+          methodStage: 'done',
+          oldFaces: old,
+          newFaces: next,
+          partialFaces: next,
+          activeMove: null,
+          activeDice: a,
+          phase: 'done'
+        });
+      }
+
+      sample.ops.forEach((op, idx) => {
+        const [a, b] = op;
+        push(CODE.opsFor, `從 works 拿出第 ${idx + 1} 筆：a=${a}, b=${b}。`, `處理操作 ${idx + 1} / ${sample.m}`, { currentOpIndex: idx, activeDice: a, phase: 'active', method: 'none', oldFaces: null, newFaces: null, partialFaces: null, activeMove: null, methodStage: '', swapInfo: null });
+
+        if (b > 0) {
+          push(CODE.ifSwap, `檢查 b > 0。現在 b=${b}，所以要交換整顆 Dice 物件。`, '判斷：交換', { method: 'swap' });
+          const beforeA = cloneFaces(state.dices[a]);
+          const beforeB = cloneFaces(state.dices[b]);
+          const temp = state.dices[a];
+          state.dices[a] = state.dices[b];
+          state.dices[b] = temp;
+          push(CODE.swap, `交換位置 ${a} 和位置 ${b}。不是只換上面點數，是整顆 faces 狀態都換位置。`, '交換完成', {
+            activeDice: a,
+            phase: 'done',
+            method: 'swap',
+            swapInfo: { a, b, beforeA: beforeA.join(','), beforeB: beforeB.join(','), afterA: state.dices[a].join(','), afterB: state.dices[b].join(',') }
+          });
+        } else if (b === -1) {
+          push(CODE.ifSwap, `檢查 b > 0。現在 b=-1，不是正整數，所以不交換。`, '判斷：不交換', { method: 'none', oldFaces: null, newFaces: null, partialFaces: null, activeMove: null, methodStage: '' });
+          push(CODE.elifFront, '檢查 b == -1。成立，所以第 a 顆要往前滾。', '判斷：往前滾', { method: 'front', methodStage: 'call' });
+          push(CODE.callFront, `呼叫 dices[${a}].roll_front()。白話：位置 ${a} 的 Dice 自己往前滾。`, '呼叫 roll_front()', { method: 'front', methodStage: 'call' });
+          const old = cloneFaces(state.dices[a]);
+          const next = [old[2], old[1], old[5], old[0], old[4], old[3]];
+          addRollMoveSteps('front', a, old, next, CODE.frontDef, CODE.frontUnpack, CODE.frontRules, CODE.frontAssign);
+        } else if (b === -2) {
+          push(CODE.ifSwap, `檢查 b > 0。現在 b=-2，不是正整數，所以不交換。`, '判斷：不交換', { method: 'none', oldFaces: null, newFaces: null, partialFaces: null, activeMove: null, methodStage: '' });
+          push(CODE.elifFront, '檢查 b == -1。現在 b=-2，所以不是往前滾。', '判斷：不是 -1', { method: 'none' });
+          push(CODE.elifRight, '檢查 b == -2。成立，所以第 a 顆要往右滾。', '判斷：往右滾', { method: 'right', methodStage: 'call' });
+          push(CODE.callRight, `呼叫 dices[${a}].roll_right()。白話：位置 ${a} 的 Dice 自己往右滾。`, '呼叫 roll_right()', { method: 'right', methodStage: 'call' });
+          const old = cloneFaces(state.dices[a]);
+          const next = [old[4], old[0], old[2], old[3], old[5], old[1]];
+          addRollMoveSteps('right', a, old, next, CODE.rightDef, CODE.rightUnpack, CODE.rightRules, CODE.rightAssign);
+        }
+      });
+
+      for (let i = 1; i <= sample.n; i++) {
+        push(CODE.outputFor, `輸出迴圈準備看第 ${i} 個位置。`, `準備輸出第 ${i} 個`, { currentOpIndex: -1, activeDice: i, phase: 'active', method: 'none' });
+        push(CODE.outputPrint, `呼叫 dices[${i}].up()。白話：問這顆 Dice「你上面是幾點？」`, '呼叫 up()', { method: 'up', methodStage: 'call', activeDice: i, phase: 'active', oldFaces: cloneFaces(state.dices[i]) });
+        push(CODE.upDef, '進入 up 方法。up() 不會改變骰子，只是準備讀資料。', '進入 up()', { method: 'up', methodStage: 'enter', activeDice: i, phase: 'active', oldFaces: cloneFaces(state.dices[i]) });
+        const val = state.dices[i][0];
+        push(CODE.upReturn, `讀 self.faces[0]：因為第 0 格永遠代表上面，所以目前朝上是 ${val}。`, `up() 讀到 ${val}`, { method: 'up', methodStage: 'read', activeDice: i, phase: 'active', oldFaces: cloneFaces(state.dices[i]), activeMove: { toIndex: 0, toLabel: '上', fromIndex: 0, fromLabel: 'faces[0]', value: val, plain: '讀取朝上的點數' } });
+        state.output = state.output.concat([val]);
+        push(CODE.upReturn, `up() 回傳 ${val}，把它加入輸出結果。`, `目前輸出：${state.output.join(' ')}`, { method: 'up', methodStage: 'return', activeDice: i, phase: 'returning', oldFaces: cloneFaces(state.dices[i]), activeMove: { toIndex: 0, toLabel: '上', fromIndex: 0, fromLabel: 'faces[0]', value: val, plain: '回傳朝上的點數' } });
+      }
+
+      push(CODE.outputPrint, `全部輸出完成，答案是 ${state.output.join(' ')}。`, `答案：${state.output.join(' ')}`, { activeDice: null, phase: 'done', method: 'none' });
+      return localSteps;
+    }
+
+    function buildSteps(sample) {
+      return makeStepFactory(sample);
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+
+    // =============================================================
+    // Three.js 3D 骰子
+    // 世界方向與 faces 的對應：
+    // 上 +Y=0、右 +X=1、後 -Z=2、前 +Z=3、左 -X=4、下 -Y=5。
+    // roll_front：繞 X 軸 +90°，舊後會到新上。
+    // roll_right：繞 Z 軸 -90°，舊左會到新上。
+    // =============================================================
+    const threeState = {
+      ready: false,
+      failed: false,
+      scene: null,
+      renderer: null,
+      camera: null,
+      diceGroup: null,
+      diceMesh: null,
+      edgeLines: null,
+      materials: [],
+      textureCache: new Map(),
+      animationFrame: null,
+      animationToken: 0,
+      animating: false,
+      resizeObserver: null,
+      lastStepIndex: -1,
+      lastSampleIndex: -1,
+      currentFaces: null,
+      currentHighlight: null
+    };
+
+    // BoxGeometry 材質順序：+X、-X、+Y、-Y、+Z、-Z。
+    // 轉成 faces 方向索引：右、左、上、下、前、後。
+    const materialDirectionOrder = [1, 4, 0, 5, 3, 2];
+
+    function ensureThreeScene() {
+      if (threeState.ready) return true;
+      if (threeState.failed) return false;
+
+      const host = document.getElementById('threeDiceCanvasHost');
+      const fallback = document.getElementById('threeFallback');
+      if (!host) return false;
+
+      if (!window.THREE) {
+        threeState.failed = true;
+        if (fallback) fallback.innerHTML = 'Three.js 沒有載入成功。下方 SVG、點數搬家表與 List 動畫仍可正常使用。';
+        return false;
+      }
+
+      try {
+        const THREE = window.THREE;
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xeefbf8);
+
+        const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+        camera.position.set(6.2, 5.0, 8.0);
+        camera.lookAt(0, -0.2, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        if ('outputColorSpace' in renderer && THREE.SRGBColorSpace) {
+          renderer.outputColorSpace = THREE.SRGBColorSpace;
+        }
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        host.innerHTML = '';
+        host.appendChild(renderer.domElement);
+
+        const ambient = new THREE.HemisphereLight(0xffffff, 0x7f9c95, 2.1);
+        scene.add(ambient);
+        const key = new THREE.DirectionalLight(0xffffff, 2.7);
+        key.position.set(5, 8, 7);
+        key.castShadow = true;
+        key.shadow.mapSize.set(1024, 1024);
+        scene.add(key);
+        const fill = new THREE.DirectionalLight(0xb9dfff, 1.2);
+        fill.position.set(-6, 3, -4);
+        scene.add(fill);
+
+        const floorMaterial = new THREE.MeshStandardMaterial({ color: 0xd9eee9, roughness: 0.95, metalness: 0 });
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(15, 12), floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -1.62;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        const grid = new THREE.GridHelper(12, 12, 0x7fa9a0, 0xb8d8d0);
+        grid.position.y = -1.60;
+        scene.add(grid);
+
+        const materials = Array.from({ length: 6 }, () => new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          roughness: 0.48,
+          metalness: 0.03
+        }));
+        const geometry = new THREE.BoxGeometry(2.7, 2.7, 2.7);
+        const diceMesh = new THREE.Mesh(geometry, materials);
+        diceMesh.castShadow = true;
+        diceMesh.receiveShadow = true;
+
+        const edgeLines = new THREE.LineSegments(
+          new THREE.EdgesGeometry(geometry),
+          new THREE.LineBasicMaterial({ color: 0x334155, linewidth: 2 })
+        );
+
+        const diceGroup = new THREE.Group();
+        diceGroup.add(diceMesh);
+        diceGroup.add(edgeLines);
+        diceGroup.position.y = -0.2;
+        scene.add(diceGroup);
+
+        addDirectionHelpers(scene, THREE);
+
+        threeState.scene = scene;
+        threeState.renderer = renderer;
+        threeState.camera = camera;
+        threeState.diceGroup = diceGroup;
+        threeState.diceMesh = diceMesh;
+        threeState.edgeLines = edgeLines;
+        threeState.materials = materials;
+        threeState.ready = true;
+
+        const resize = () => resizeThreeRenderer();
+        if (window.ResizeObserver) {
+          threeState.resizeObserver = new ResizeObserver(resize);
+          threeState.resizeObserver.observe(host);
+        } else {
+          window.addEventListener('resize', resize);
+        }
+        resizeThreeRenderer();
+        setThreeCubeFaces([1, 2, 3, 4, 5, 6], null);
+        renderThreeFrame();
+        return true;
+      } catch (err) {
+        console.error('Three.js 初始化失敗：', err);
+        threeState.failed = true;
+        if (fallback) fallback.innerHTML = '3D 骰子初始化失敗。下方 SVG 與 List 教學仍可正常使用。';
+        return false;
+      }
+    }
+
+    function addDirectionHelpers(scene, THREE) {
+      const origin = new THREE.Vector3(0, 0, 0);
+      const helpers = [
+        { dir: new THREE.Vector3(1, 0, 0), text: '右 +X', pos: [3.7, 0, 0], color: 0x1d4ed8 },
+        { dir: new THREE.Vector3(-1, 0, 0), text: '左 -X', pos: [-3.7, 0, 0], color: 0x1d4ed8 },
+        { dir: new THREE.Vector3(0, 0, 1), text: '前 +Z', pos: [0, 0, 3.7], color: 0xb45309 },
+        { dir: new THREE.Vector3(0, 0, -1), text: '後 -Z', pos: [0, 0, -3.7], color: 0xb45309 },
+        { dir: new THREE.Vector3(0, 1, 0), text: null, pos: [0, 3.1, 0], color: 0x047857 }
+      ];
+      helpers.forEach(item => {
+        const arrowLength = item.dir.y === 1 ? 2.9 : 3.0;
+        const arrow = new THREE.ArrowHelper(item.dir, origin, arrowLength, item.color, 0.35, 0.22);
+        scene.add(arrow);
+        if (item.text) {
+          const sprite = makeTextSprite(item.text, item.color, THREE);
+          sprite.position.set(item.pos[0], item.pos[1], item.pos[2]);
+          scene.add(sprite);
+        }
+      });
+    }
+
+    function makeTextSprite(text, color, THREE) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 320;
+      canvas.height = 112;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      roundRectPath(ctx, 8, 8, 304, 96, 18);
+      ctx.fill();
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = '#' + color.toString(16).padStart(6, '0');
+      ctx.stroke();
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 42px Microsoft JhengHei, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 160, 56);
+      const texture = new THREE.CanvasTexture(canvas);
+      if ('colorSpace' in texture && THREE.SRGBColorSpace) texture.colorSpace = THREE.SRGBColorSpace;
+      const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+      const sprite = new THREE.Sprite(material);
+      sprite.scale.set(2.0, 0.7, 1);
+      sprite.renderOrder = 10;
+      return sprite;
+    }
+
+    function roundRectPath(ctx, x, y, w, h, r) {
+      const radius = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.arcTo(x + w, y, x + w, y + h, radius);
+      ctx.arcTo(x + w, y + h, x, y + h, radius);
+      ctx.arcTo(x, y + h, x, y, radius);
+      ctx.arcTo(x, y, x + w, y, radius);
+      ctx.closePath();
+    }
+
+    function applyThreeCameraLayout() {
+      if (!threeState.ready) return;
+      const host = document.getElementById('threeDiceCanvasHost');
+      const width = Math.max(320, host ? (host.clientWidth || 320) : 320);
+      const height = Math.max(280, host ? (host.clientHeight || 400) : 400);
+      const aspect = width / height;
+      if (aspect < 1.12) {
+        threeState.camera.position.set(7.25, 5.8, 9.45);
+      } else {
+        threeState.camera.position.set(6.2, 5.0, 8.0);
+      }
+      threeState.camera.lookAt(0, -0.2, 0);
+    }
+
+    function resizeThreeRenderer() {
+      if (!threeState.ready) return;
+      const host = document.getElementById('threeDiceCanvasHost');
+      if (!host) return;
+      const width = Math.max(320, host.clientWidth || 320);
+      const height = Math.max(280, host.clientHeight || 400);
+      threeState.renderer.setSize(width, height, false);
+      threeState.camera.aspect = width / height;
+      threeState.camera.updateProjectionMatrix();
+      applyThreeCameraLayout();
+      renderThreeFrame();
+    }
+
+    function renderThreeFrame() {
+      if (!threeState.ready) return;
+      threeState.renderer.render(threeState.scene, threeState.camera);
+    }
+
+    function makeDiceTexture(value, highlighted) {
+      const THREE = window.THREE;
+      const key = `${value}-${highlighted ? 1 : 0}`;
+      if (threeState.textureCache.has(key)) return threeState.textureCache.get(key);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 512, 512);
+      ctx.fillStyle = highlighted ? '#fff3bf' : '#ffffff';
+      ctx.fillRect(0, 0, 512, 512);
+      ctx.lineWidth = highlighted ? 24 : 16;
+      ctx.strokeStyle = highlighted ? '#f59e0b' : '#475569';
+      ctx.strokeRect(12, 12, 488, 488);
+
+      const pipMap = {
+        1: [[0.5, 0.5]],
+        2: [[0.28, 0.28], [0.72, 0.72]],
+        3: [[0.28, 0.28], [0.5, 0.5], [0.72, 0.72]],
+        4: [[0.28, 0.28], [0.72, 0.28], [0.28, 0.72], [0.72, 0.72]],
+        5: [[0.28, 0.28], [0.72, 0.28], [0.5, 0.5], [0.28, 0.72], [0.72, 0.72]],
+        6: [[0.28, 0.24], [0.72, 0.24], [0.28, 0.5], [0.72, 0.5], [0.28, 0.76], [0.72, 0.76]]
+      };
+      const pips = pipMap[Number(value)] || [[0.5, 0.5]];
+      ctx.fillStyle = highlighted ? '#92400e' : '#111827';
+      pips.forEach(([px, py]) => {
+        ctx.beginPath();
+        ctx.arc(px * 512, py * 512, 38, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.fillStyle = highlighted ? '#92400e' : '#334155';
+      ctx.font = 'bold 54px Arial, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(String(value), 475, 480);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      if ('colorSpace' in texture && THREE.SRGBColorSpace) texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = Math.min(8, threeState.renderer.capabilities.getMaxAnisotropy());
+      texture.needsUpdate = true;
+      threeState.textureCache.set(key, texture);
+      return texture;
+    }
+
+    function setThreeCubeFaces(faces, highlightDirection) {
+      if (!threeState.ready || !faces) return;
+      threeState.currentFaces = faces.slice();
+      threeState.currentHighlight = highlightDirection;
+      threeState.materials.forEach((material, materialIndex) => {
+        const directionIndex = materialDirectionOrder[materialIndex];
+        const value = faces[directionIndex];
+        const highlighted = directionIndex === highlightDirection;
+        material.map = makeDiceTexture(value, highlighted);
+        material.emissive.setHex(highlighted ? 0x3b2600 : 0x000000);
+        material.emissiveIntensity = highlighted ? 0.32 : 0;
+        material.needsUpdate = true;
+      });
+      renderThreeFrame();
+    }
+
+    function stopThreeAnimation() {
+      threeState.animationToken += 1;
+      if (threeState.animationFrame) cancelAnimationFrame(threeState.animationFrame);
+      threeState.animationFrame = null;
+      threeState.animating = false;
+    }
+
+    function setThreeRotation(x, y, z) {
+      if (!threeState.ready) return;
+      threeState.diceGroup.rotation.set(x, y, z);
+      renderThreeFrame();
+    }
+
+    function animateThreeRotation(target, duration = 520, snap = false) {
+      if (!threeState.ready) return;
+      stopThreeAnimation();
+      if (snap || duration <= 0) {
+        setThreeRotation(target.x || 0, target.y || 0, target.z || 0);
+        return;
+      }
+
+      const token = threeState.animationToken;
+      const start = {
+        x: threeState.diceGroup.rotation.x,
+        y: threeState.diceGroup.rotation.y,
+        z: threeState.diceGroup.rotation.z
+      };
+      const startedAt = performance.now();
+      threeState.animating = true;
+
+      const frame = now => {
+        if (token !== threeState.animationToken) return;
+        const raw = Math.min(1, (now - startedAt) / duration);
+        const t = raw < 0.5 ? 4 * raw * raw * raw : 1 - Math.pow(-2 * raw + 2, 3) / 2;
+        threeState.diceGroup.rotation.set(
+          start.x + ((target.x || 0) - start.x) * t,
+          start.y + ((target.y || 0) - start.y) * t,
+          start.z + ((target.z || 0) - start.z) * t
+        );
+        renderThreeFrame();
+        if (raw < 1) {
+          threeState.animationFrame = requestAnimationFrame(frame);
+        } else {
+          threeState.animating = false;
+          threeState.animationFrame = null;
+        }
+      };
+      threeState.animationFrame = requestAnimationFrame(frame);
+    }
+
+    function rollFacesForThree(method, oldFaces) {
+      if (!oldFaces) return null;
+      if (method === 'front') {
+        return [oldFaces[2], oldFaces[1], oldFaces[5], oldFaces[0], oldFaces[4], oldFaces[3]];
+      }
+      if (method === 'right') {
+        return [oldFaces[4], oldFaces[0], oldFaces[2], oldFaces[3], oldFaces[5], oldFaces[1]];
+      }
+      return oldFaces.slice();
+    }
+
+    function displayFacesText(faces) {
+      if (!faces) return '尚未建立';
+      return `[${faces.map(v => v === null || v === undefined ? '＿' : v).join(', ')}]`;
+    }
+
+    function firstExistingDiceIndex(step) {
+      if (step.activeDice && step.dices && step.dices[step.activeDice]) return step.activeDice;
+      if (step.dices) {
+        for (let i = 1; i < step.dices.length; i++) {
+          if (step.dices[i]) return i;
+        }
+      }
+      return null;
+    }
+
+    function renderThreeFaceTable(step, oldFaces, newFaces) {
+      const box = document.getElementById('threeFaceTable');
+      if (!box) return;
+      const safeOld = oldFaces || [null, null, null, null, null, null];
+      const safeNew = newFaces || safeOld;
+      const move = step.activeMove;
+      const showValue = value => value === null || value === undefined ? '＿' : value;
+      const cellClass = (row, index) => {
+        if (step.method === 'up' && index === 0) return 'read-top';
+        if (!move) return '';
+        if (row === 'old' && index === move.fromIndex) return 'move-source';
+        if (row === 'new' && index === move.toIndex) return 'move-target';
+        return '';
+      };
+      box.innerHTML = `
+        <table class="three-face-table">
+          <thead>
+            <tr><th>欄位</th>${faceLabels.map((_, i) => `<th>faces[${i}]</th>`).join('')}</tr>
+          </thead>
+          <tbody>
+            <tr><td>固定方向</td>${faceLabels.map(label => `<td>${label}</td>`).join('')}</tr>
+            <tr><td>舊點數</td>${safeOld.map((value, i) => `<td class="${cellClass('old', i)}">${showValue(value)}</td>`).join('')}</tr>
+            <tr><td>${step.methodStage === 'done' ? '新點數' : '新點數／形成中'}</td>${safeNew.map((value, i) => `<td class="${cellClass('new', i)}">${showValue(value)}</td>`).join('')}</tr>
+          </tbody>
+        </table>`;
+    }
+
+    function updateThreeText(step, diceIndex, displayFaces, targetProgress) {
+      const methodEl = document.getElementById('threeMethodText');
+      const posEl = document.getElementById('threeDicePosition');
+      const progressEl = document.getElementById('threeProgressText');
+      const mainEl = document.getElementById('threeExplainMain');
+      const subEl = document.getElementById('threeExplainSub');
+      const ruleEl = document.getElementById('threeRuleText');
+      const topEl = document.getElementById('threeTopDirectionText');
+      const barEl = document.getElementById('threeProgressBar');
+      const oldLabel = document.getElementById('threeOldLabel');
+      const newLabel = document.getElementById('threeNewLabel');
+      const oldFacesEl = document.getElementById('threeOldFaces');
+      const newFacesEl = document.getElementById('threeNewFaces');
+
+      if (posEl) posEl.textContent = diceIndex ? `位置 ${diceIndex} 的 Dice 物件` : '等待建立骰子';
+      if (methodEl) methodEl.textContent = methodName(step.method);
+      const topValue = displayFaces && displayFaces[0] !== undefined ? displayFaces[0] : '？';
+      if (topEl) topEl.textContent = `上：faces[0] = ${topValue}（+Y）`;
+      const degrees = Math.round(targetProgress * 90);
+      if (progressEl) progressEl.textContent = `${degrees}° / 90°`;
+      if (barEl) barEl.style.width = `${Math.round(targetProgress * 100)}%`;
+
+      if (step.method === 'front' || step.method === 'right') {
+        const rule = rollRules[step.method];
+        const move = step.activeMove;
+        const oldFaces = step.oldFaces || displayFaces;
+        const fullNew = step.newFaces || rollFacesForThree(step.method, oldFaces);
+        const partial = step.methodStage === 'done' ? fullNew : (step.partialFaces || fullNew);
+        if (ruleEl) ruleEl.textContent = `${rule.title}：${rule.summary}`;
+        if (oldLabel) oldLabel.textContent = '舊 faces：[上,右,後,前,左,下]';
+        if (newLabel) newLabel.textContent = step.methodStage === 'done' ? '新 faces' : '新 faces 形成中';
+        if (oldFacesEl) oldFacesEl.textContent = displayFacesText(oldFaces);
+        if (newFacesEl) newFacesEl.textContent = displayFacesText(partial);
+        renderThreeFaceTable(step, oldFaces, partial);
+        if (move) {
+          if (mainEl) mainEl.textContent = `${move.fromLabel}的點數 ${move.value}，正在移到${move.toLabel}。`;
+          if (subEl) subEl.textContent = `${move.plain}。3D 骰子已轉到約 ${degrees}°；List 同步把 ${move.value} 放進 faces[${move.toIndex}]。`;
+        } else if (step.methodStage === 'done') {
+          if (mainEl) mainEl.textContent = `${rule.title} 完成：3D 方向與新 faces 已經一致。`;
+          if (subEl) subEl.textContent = `${rule.summary} 舊 List ${displayFacesText(oldFaces)} 變成 ${displayFacesText(fullNew)}。`;
+        } else {
+          if (mainEl) mainEl.textContent = `${rule.title}：先看舊方向，再開始 90° 滾動。`;
+          if (subEl) subEl.textContent = rule.summary;
+        }
+        return;
+      }
+
+      if (step.method === 'up') {
+        const faces = step.oldFaces || displayFaces;
+        const value = faces ? faces[0] : '?';
+        if (ruleEl) ruleEl.textContent = 'up()：讀取 faces[0]，不旋轉，也不修改骰子或 List。';
+        if (oldLabel) oldLabel.textContent = '目前 faces';
+        if (newLabel) newLabel.textContent = 'up() 回傳值';
+        if (oldFacesEl) oldFacesEl.textContent = displayFacesText(faces);
+        if (newFacesEl) newFacesEl.textContent = `faces[0] = ${value}`;
+        renderThreeFaceTable(step, faces, faces);
+        if (mainEl) mainEl.textContent = `up() 不轉動骰子，只查看上面：faces[0] = ${value}。`;
+        if (subEl) subEl.textContent = '上面那一面會高亮，但 3D 骰子與 List 都不會被改變。';
+        return;
+      }
+
+      if (ruleEl) {
+        ruleEl.textContent = step.method === 'swap'
+          ? '交換：整顆 Dice 物件換位置；骰子本身不旋轉，faces 內容也不重排。'
+          : '尚未進入滾動方法。方向位置固定，點數會搬家。';
+      }
+      if (oldLabel) oldLabel.textContent = '目前 faces';
+      if (newLabel) newLabel.textContent = '目前狀態';
+      if (oldFacesEl) oldFacesEl.textContent = displayFacesText(displayFaces);
+      if (newFacesEl) newFacesEl.textContent = displayFaces ? `上面 = ${displayFaces[0]}` : '尚未建立';
+      renderThreeFaceTable(step, displayFaces, displayFaces);
+      if (mainEl) mainEl.textContent = displayFaces ? '目前 3D 骰子與 faces List 顯示相同狀態。' : '尚未建立 Dice 物件。';
+      if (subEl) subEl.textContent = step.method === 'swap'
+        ? '交換只改變 Dice 物件所在的位置，不會讓骰子本身旋轉。'
+        : '方向位置固定，點數會隨 roll_front() 或 roll_right() 搬家。';
+    }
+
+    function renderThreeDice(step) {
+      const diceIndex = firstExistingDiceIndex(step);
+      const fallbackFaces = diceIndex && step.dices ? step.dices[diceIndex] : null;
+      let displayFaces = fallbackFaces ? fallbackFaces.slice() : null;
+      let highlightDirection = null;
+      let progress = 0;
+      let target = { x: 0, y: 0, z: 0 };
+      let snap = false;
+
+      const isBackward = threeState.lastSampleIndex === currentSampleIndex && stepIndex < threeState.lastStepIndex;
+      const sampleChanged = threeState.lastSampleIndex !== currentSampleIndex;
+
+      if (step.method === 'front' || step.method === 'right') {
+        if (step.methodStage === 'done') {
+          displayFaces = (step.newFaces || fallbackFaces || rollFacesForThree(step.method, step.oldFaces));
+          progress = 0;
+          snap = true;
+        } else {
+          displayFaces = (step.oldFaces || fallbackFaces);
+          if (step.methodStage === 'move' && step.activeMove) {
+            progress = Math.max(0, Math.min(1, step.activeMove.order / step.activeMove.total));
+            highlightDirection = step.activeMove.fromIndex;
+          }
+          if (step.method === 'front') target.x = progress * Math.PI / 2;
+          if (step.method === 'right') target.z = -progress * Math.PI / 2;
+          if (isBackward || sampleChanged) snap = true;
+        }
+      } else if (step.method === 'up') {
+        displayFaces = step.oldFaces || fallbackFaces;
+        highlightDirection = 0;
+        snap = true;
+      } else {
+        snap = true;
+      }
+
+      updateThreeText(step, diceIndex, displayFaces, progress);
+
+      if (!ensureThreeScene()) {
+        threeState.lastStepIndex = stepIndex;
+        threeState.lastSampleIndex = currentSampleIndex;
+        return;
+      }
+
+      if (!displayFaces) {
+        setThreeCubeFaces([1, 2, 3, 4, 5, 6], null);
+        setThreeRotation(0, 0, 0);
+      } else {
+        setThreeCubeFaces(displayFaces, highlightDirection);
+        animateThreeRotation(target, 520, snap);
+      }
+
+      threeState.lastStepIndex = stepIndex;
+      threeState.lastSampleIndex = currentSampleIndex;
+    }
+
+    function resetThreeView() {
+      if (!ensureThreeScene()) return;
+      stopThreeAnimation();
+      applyThreeCameraLayout();
+      renderThreeFrame();
+    }
+
+    function replayCurrentThreeRoll() {
+      const step = currentStep();
+      if (!step || (step.method !== 'front' && step.method !== 'right')) {
+        const mainEl = document.getElementById('threeExplainMain');
+        if (mainEl) mainEl.textContent = '目前步驟沒有 roll_front() 或 roll_right()，所以沒有滾動可重播。';
+        return;
+      }
+      if (!ensureThreeScene()) return;
+      const oldFaces = step.oldFaces || (step.activeDice && step.dices[step.activeDice]);
+      if (!oldFaces) return;
+      const newFaces = step.newFaces || rollFacesForThree(step.method, oldFaces);
+      setThreeCubeFaces(oldFaces, null);
+      setThreeRotation(0, 0, 0);
+      const target = step.method === 'front'
+        ? { x: Math.PI / 2, y: 0, z: 0 }
+        : { x: 0, y: 0, z: -Math.PI / 2 };
+      const mainEl = document.getElementById('threeExplainMain');
+      const subEl = document.getElementById('threeExplainSub');
+      if (mainEl) mainEl.textContent = step.method === 'front'
+        ? '重播：舊後 → 新上、舊上 → 新前、舊前 → 新下、舊下 → 新後。'
+        : '重播：舊左 → 新上、舊上 → 新右、舊右 → 新下、舊下 → 新左。';
+      if (subEl) subEl.textContent = `舊 faces ${displayFacesText(oldFaces)}，完成後是 ${displayFacesText(newFaces)}。`;
+      animateThreeRotation(target, 1000, false);
+      const token = threeState.animationToken;
+      setTimeout(() => {
+        if (token !== threeState.animationToken) return;
+        setThreeCubeFaces(newFaces, 0);
+        setThreeRotation(0, 0, 0);
+        setTimeout(() => renderThreeDice(currentStep()), 650);
+      }, 1030);
+    }
+
+    function renderCode() {
+      const box = document.getElementById('codeBox');
+      box.innerHTML = codeLines.map((line, i) => {
+        const no = i + 1;
+        return `<div class="code-line" data-line="${no}"><span class="ln">${no}</span><span class="code-text">${escapeHtml(line)}</span></div>`;
+      }).join('');
+    }
+
+    function renderSampleSelect() {
+      const select = document.getElementById('sampleSelect');
+      select.innerHTML = samples.map((s, i) => `<option value="${i}">${escapeHtml(s.name)}</option>`).join('');
+      select.value = currentSampleIndex;
+    }
+
+    function setToolbarHeight() {
+      const toolbar = document.getElementById('toolbar');
+      document.documentElement.style.setProperty('--toolbar-h', `${toolbar.offsetHeight}px`);
+    }
+
+    function initSample(index) {
+      stopPlay();
+      currentSampleIndex = index;
+      threeState.lastStepIndex = -1;
+      threeState.lastSampleIndex = -1;
+      const sample = samples[currentSampleIndex];
+      steps = buildSteps(sample);
+      stepIndex = 0;
+      renderSampleSelect();
+      renderStep();
+      setToolbarHeight();
+    }
+
+    function currentStep() {
+      return steps[stepIndex] || steps[0];
+    }
+
+    function renderStep() {
+      const step = currentStep();
+      if (!step) return;
+      document.getElementById('stepText').textContent = `步驟 ${stepIndex + 1} / ${steps.length}`;
+      document.getElementById('resultText').textContent = step.result || '尚未開始';
+      document.getElementById('messageText').textContent = step.message || '';
+      renderSamplePanel(step);
+      renderCodeHighlight(step);
+      renderThreeDice(step);
+      renderSvg(step);
+      renderStateChips(step);
+      renderWorksTable(step);
+      renderCoreMovePanel(step);
+      renderMethodPanel(step);
+      renderDicesTable(step);
+      setToolbarHeight();
+    }
+
+    function renderCodeHighlight(step) {
+      const lines = Array.isArray(step.activeLine) ? step.activeLine : [step.activeLine];
+      document.querySelectorAll('.code-line').forEach(el => el.classList.remove('active-code'));
+      let first = null;
+      lines.forEach(line => {
+        const el = document.querySelector(`.code-line[data-line="${line}"]`);
+        if (el) {
+          el.classList.add('active-code');
+          if (!first) first = el;
+        }
+      });
+      if (first) ensureCodeLineVisible(first);
+    }
+
+    function ensureCodeLineVisible(el) {
+      const box = document.getElementById('codeBox');
+      const top = el.offsetTop;
+      const bottom = top + el.offsetHeight;
+      const viewTop = box.scrollTop;
+      const viewBottom = viewTop + box.clientHeight;
+      if (top < viewTop + 20 || bottom > viewBottom - 20) {
+        box.scrollTop = Math.max(0, top - box.clientHeight / 2);
+      }
+    }
+
+    function renderSamplePanel(step) {
+      const sample = samples[currentSampleIndex];
+      const lines = sample.inputLines.map((raw, idx) => {
+        const active = idx === step.currentInputLine ? ' active' : '';
+        return `<div class="sample-line${active}"><div class="sample-raw">${escapeHtml(raw)}</div><div class="sample-explain">${escapeHtml(sample.explanations[idx])}</div></div>`;
+      }).join('');
+      const out = `<div class="sample-line"><div class="sample-raw">輸出 ${escapeHtml(sample.output)}</div><div class="sample-explain">做完全部操作後，依序印出每個位置朝上的點數。</div></div>`;
+      document.getElementById('samplePanel').innerHTML = lines + out;
+    }
+
+    function renderStateChips(step) {
+      const op = step.currentOpIndex >= 0 ? step.works[step.currentOpIndex] || samples[currentSampleIndex].ops[step.currentOpIndex] : null;
+      const chips = [
+        `n：${step.n ?? '尚未讀取'}`,
+        `m：${step.m ?? '尚未讀取'}`,
+        `works 筆數：${step.works.length}`,
+        `目前操作：${op ? opText(op) : '沒有'}`,
+        `目前 Dice：${step.activeDice ? '位置 ' + step.activeDice : '沒有'}`,
+        `目前輸出：${step.output.length ? step.output.join(' ') : '尚未輸出'}`
+      ];
+      document.getElementById('stateChips').innerHTML = chips.map(c => `<span class="state-chip">${escapeHtml(c)}</span>`).join('');
+    }
+
+    function renderWorksTable(step) {
+      const sample = samples[currentSampleIndex];
+      if (!step.works.length) {
+        document.getElementById('worksTable').innerHTML = '<p class="hint">目前 works 還是空的，操作還沒讀進來。</p>';
+        return;
+      }
+      let html = '<table><thead><tr><th>第幾筆</th><th>a</th><th>b</th><th>白話意思</th></tr></thead><tbody>';
+      sample.ops.forEach((op, idx) => {
+        const read = idx < step.works.length;
+        const active = idx === step.currentOpIndex ? ' class="active-row"' : (read ? ' class="done-row"' : '');
+        html += `<tr${active}><td>${idx + 1}</td><td>${read ? op[0] : '未讀'}</td><td>${read ? op[1] : '未讀'}</td><td>${read ? escapeHtml(opText(op)) : '這一筆還沒放進 works'}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      document.getElementById('worksTable').innerHTML = html;
+    }
+
+    function faceTableRow(label, val, cls = '') {
+      return `<tr${cls}><td>${label}</td><td>${val}</td></tr>`;
+    }
+
+
+    function faceValueText(v) {
+      return v === null || v === undefined ? '＿' : String(v);
+    }
+
+    function facesArrayHtml(label, faces, activeIndex = null, doneAll = false) {
+      if (!faces) return `<p class="hint">${escapeHtml(label)}：尚未產生</p>`;
+      let html = `<div class="faces-row"><span class="faces-label">${escapeHtml(label)}</span>`;
+      faces.forEach((v, idx) => {
+        const cls = v === null || v === undefined ? ' empty' : (idx === activeIndex ? ' active' : (doneAll ? ' done' : ''));
+        html += `<span class="face-cell${cls}"><small>${faceLabels[idx]}</small>${escapeHtml(faceValueText(v))}</span>`;
+      });
+      html += '</div>';
+      return html;
+    }
+
+    function renderCoreMovePanel(step) {
+      const panel = document.getElementById('coreMovePanel');
+      if (!panel) return;
+      if (step.method === 'front' || step.method === 'right') {
+        const rule = rollRules[step.method];
+        const move = step.activeMove;
+        let html = `<div class="method-title">${escapeHtml(rule.title)}</div>`;
+        html += `<div class="important">${escapeHtml(rule.summary)}</div>`;
+        if (move) {
+          html += `<div class="move-banner">現在搬家：${escapeHtml(move.fromLabel)} 的 ${move.value} → ${escapeHtml(move.toLabel)}。${escapeHtml(move.plain)}。</div>`;
+        } else if (step.methodStage === 'done') {
+          html += `<div class="move-banner">搬家完成：現在可以看到新的 faces。</div>`;
+        } else {
+          html += `<div class="move-banner">準備搬家：先看舊 faces，再一格一格放進新 faces。</div>`;
+        }
+        html += facesArrayHtml('舊 faces', step.oldFaces, move ? move.fromIndex : null, false);
+        html += `<div class="arrow-note">↓ 點數搬到新的方向</div>`;
+        html += facesArrayHtml(step.methodStage === 'done' ? '新 faces' : '新 faces 形成中', step.partialFaces || step.newFaces, move ? move.toIndex : null, step.methodStage === 'done');
+        panel.innerHTML = html;
+        return;
+      }
+      if (step.method === 'up') {
+        const faces = step.oldFaces || (step.activeDice && step.dices[step.activeDice]);
+        const val = faces ? faces[0] : '?';
+        panel.innerHTML = `
+          <div class="method-title">up()：讀取上面的點數</div>
+          <div class="important">up() 不會改變 faces，只會回傳 self.faces[0]。</div>
+          ${facesArrayHtml('目前 faces', faces, 0, false)}
+          <div class="move-banner">faces[0] 永遠代表「上」，所以 up() 讀到 ${escapeHtml(val)}。</div>`;
+        return;
+      }
+      panel.innerHTML = `
+        <div class="important">方向位置固定，點數會搬家。</div>
+        <p>這一題要同時看懂兩件事：骰子畫面怎麼滾、<span class="mini-code">faces</span> List 怎麼變。</p>
+        <p class="hint">等動畫走到 <span class="mini-code">roll_front()</span>、<span class="mini-code">roll_right()</span>、<span class="mini-code">up()</span> 時，這裡會同步顯示點數搬家過程。</p>`;
+    }
+
+    function renderMethodPanel(step) {
+      const panel = document.getElementById('methodPanel');
+      if (step.method === 'front' || step.method === 'right') {
+        panel.innerHTML = makeRollTable(rollRules[step.method], step);
+        return;
+      }
+      if (step.method === 'swap' && step.swapInfo) {
+        const s = step.swapInfo;
+        panel.innerHTML = `
+          <div class="important">交換是「整顆 Dice 物件交換位置」，不是只有交換上面的點數。</div>
+          <table>
+            <thead><tr><th>位置</th><th>交換前 faces</th><th>交換後 faces</th></tr></thead>
+            <tbody>
+              <tr><td>位置 ${s.a}</td><td>[${escapeHtml(s.beforeA)}]</td><td>[${escapeHtml(s.afterA)}]</td></tr>
+              <tr><td>位置 ${s.b}</td><td>[${escapeHtml(s.beforeB)}]</td><td>[${escapeHtml(s.afterB)}]</td></tr>
+            </tbody>
+          </table>`;
+        return;
+      }
+      if (step.method === 'up') {
+        const faces = step.oldFaces || (step.activeDice && step.dices[step.activeDice] ? step.dices[step.activeDice] : null);
+        const val = faces ? faces[0] : '?';
+        panel.innerHTML = `
+          <div class="important"><span class="mini-code">up()</span> 只做一件事：回傳 <span class="mini-code">self.faces[0]</span>。它只讀資料，不改資料。</div>
+          ${facesArrayHtml('目前 faces', faces, 0, false)}
+          <table>
+            <tbody>
+              ${faceTableRow('目前 Dice 位置', step.activeDice || '沒有')}
+              ${faceTableRow('faces[0]', val)}
+              ${faceTableRow('白話意思', `朝上的點數是 ${val}`)}
+            </tbody>
+          </table>`;
+        return;
+      }
+      panel.innerHTML = `
+        <p class="hint">目前沒有進入滾動方法。這裡會在呼叫 <span class="mini-code">roll_front()</span>、<span class="mini-code">roll_right()</span>、<span class="mini-code">up()</span> 或交換時，顯示更詳細的變化。</p>
+        <div class="important">物件導向的好處：<span class="mini-code">dices[a].roll_right()</span> 看起來就像「第 a 顆骰子往右滾」。</div>`;
+    }
+
+    function makeRollTable(rule, step) {
+      const old = step.oldFaces;
+      const partial = step.partialFaces;
+      const done = step.methodStage === 'done';
+      const move = step.activeMove;
+      let html = `<div class="important">${escapeHtml(rule.title)}。重點是：新位置要從舊位置拿點數。</div>`;
+      html += `<p><span class="mini-code">${escapeHtml(rule.code)}</span></p>`;
+      html += facesArrayHtml('舊 faces', old, move ? move.fromIndex : null, false);
+      html += facesArrayHtml(done ? '新 faces' : '新 faces 形成中', partial || step.newFaces, move ? move.toIndex : null, done);
+      html += '<table><thead><tr><th>新位置</th><th>從哪裡來</th><th>白話說明</th><th>目前放入的值</th></tr></thead><tbody>';
+      rule.rows.forEach((row) => {
+        const isActive = move && move.toIndex === row.toIndex;
+        const isDone = partial && partial[row.toIndex] !== null && partial[row.toIndex] !== undefined;
+        const cls = isActive ? ' class="active-row"' : (isDone ? ' class="done-row"' : '');
+        const value = old ? old[row.fromIndex] : '等待';
+        const currentValue = isDone ? partial[row.toIndex] : '尚未放入';
+        html += `<tr${cls}><td>${row.toLabel}</td><td>${row.fromLabel}（<span class="mini-code">${row.varName}</span>）</td><td>${escapeHtml(row.plain)}</td><td>${currentValue === '尚未放入' ? currentValue : value}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      if (move) html += `<div class="move-banner">目前這一步：${escapeHtml(move.fromLabel)} 的 ${move.value} 搬到 ${escapeHtml(move.toLabel)}。</div>`;
+      return html;
+    }
+
+    function renderDicesTable(step) {
+      if (!step.dices.length) {
+        document.getElementById('dicesTable').innerHTML = '<p class="hint">還沒執行建立 Dice 的那一行，所以目前沒有骰子物件。</p>';
+        return;
+      }
+      let html = '<table><thead><tr><th>位置</th><th>faces = [上,右,後,前,左,下]</th><th>朝上 faces[0]</th></tr></thead><tbody>';
+      for (let i = 1; i < step.dices.length; i++) {
+        const faces = step.dices[i];
+        const cls = i === step.activeDice ? ' class="active-row"' : '';
+        html += `<tr${cls}><td>${i}</td><td>[${faces.join(', ')}]</td><td>${faces[0]}</td></tr>`;
+      }
+      html += '</tbody></table>';
+      document.getElementById('dicesTable').innerHTML = html;
+    }
+
+    function svgText(x, y, text, size = 18, weight = 500, fill = '#111827', anchor = 'start') {
+      return `<text x="${x}" y="${y}" font-size="${size}" font-weight="${weight}" fill="${fill}" text-anchor="${anchor}" dominant-baseline="middle">${escapeHtml(text)}</text>`;
+    }
+
+    function renderSvg(step) {
+      const svg = document.getElementById('diceSvg');
+      const n = step.n || samples[currentSampleIndex].n;
+      const perRow = Math.min(4, Math.max(1, n));
+      const rows = Math.ceil(n / perRow);
+      const hasMovePanel = step.method === 'front' || step.method === 'right' || step.method === 'up';
+      const viewW = 1000;
+      const viewH = 150 + rows * 170 + (hasMovePanel ? 210 : 0);
+      svg.setAttribute('viewBox', `0 0 ${viewW} ${viewH}`);
+      svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+      let out = '';
+      const op = step.currentOpIndex >= 0 ? (samples[currentSampleIndex].ops[step.currentOpIndex] || null) : null;
+      const opFill = step.phase === 'returning' ? '#ede9fe' : (step.currentOpIndex >= 0 ? '#fff3bf' : '#e0f2fe');
+      out += `<rect x="24" y="18" width="952" height="98" rx="14" fill="${opFill}" stroke="#94a3b8" stroke-width="2"/>`;
+      out += svgText(46, 48, `目前動作：${op ? opText(op) : '沒有正在處理的操作'}`, 22, 800);
+      out += svgText(46, 82, `目前輸出：${step.output.length ? step.output.join(' ') : '尚未輸出'}　｜　物件方法：${methodName(step.method)}`, 18, 600, '#334155');
+
+      if (!step.dices.length) {
+        out += `<rect x="220" y="170" width="560" height="100" rx="14" fill="#f3f4f6" stroke="#cbd5e1" stroke-width="2"/>`;
+        out += svgText(500, 220, '還沒建立 Dice 物件', 26, 800, '#475569', 'middle');
+        svg.innerHTML = out;
+        return;
+      }
+
+      const cardW = Math.min(250, Math.max(190, (viewW - 80) / perRow - 18));
+      const cardH = 135;
+      const startX = (viewW - (perRow * cardW + (perRow - 1) * 18)) / 2;
+      const startY = 145;
+
+      for (let i = 1; i <= n; i++) {
+        const idx = i - 1;
+        const row = Math.floor(idx / perRow);
+        const col = idx % perRow;
+        const x = startX + col * (cardW + 18);
+        const y = startY + row * 170;
+        const faces = step.dices[i];
+        const isActive = i === step.activeDice;
+        const fill = isActive ? '#fff3bf' : '#dcfce7';
+        const stroke = isActive ? '#f59e0b' : '#22c55e';
+        const sw = isActive ? 4 : 2;
+        out += `<rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="14" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+        out += svgText(x + 14, y + 24, `位置 ${i}`, 20, 800);
+        out += svgText(x + cardW - 16, y + 24, `上=${faces[0]}`, 24, 900, '#b45309', 'end');
+        out += svgText(x + 14, y + 54, 'Dice 物件', 16, 600, '#475569');
+        const cellW = (cardW - 28) / 3;
+        const cellH = 28;
+        for (let k = 0; k < 6; k++) {
+          const cx = x + 14 + (k % 3) * cellW;
+          const cy = y + 70 + Math.floor(k / 3) * (cellH + 6);
+          const isUpRead = (k === 0 && step.method === 'up' && isActive);
+          const isMoveFrom = step.activeMove && step.oldFaces && step.activeMove.fromIndex === k && isActive && (step.method === 'front' || step.method === 'right');
+          const hl = isUpRead || isMoveFrom ? '#fde68a' : '#ffffff';
+          out += `<rect x="${cx}" y="${cy}" width="${cellW - 5}" height="${cellH}" rx="6" fill="${hl}" stroke="#cbd5e1"/>`;
+          out += svgText(cx + 8, cy + 14, `${faceLabels[k]}:${faces[k]}`, 14, k === 0 ? 800 : 600, '#111827');
+        }
+      }
+
+      if (hasMovePanel) {
+        const panelY = startY + rows * 170 + 8;
+        out += `<rect x="24" y="${panelY}" width="952" height="185" rx="14" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>`;
+        if (step.method === 'front' || step.method === 'right') {
+          const rule = rollRules[step.method];
+          const move = step.activeMove;
+          out += svgText(46, panelY + 30, `核心：${rule.title}，${rule.summary}`, 20, 900, '#1d4ed8');
+          if (move) {
+            out += svgText(46, panelY + 62, `${move.fromLabel} 的 ${move.value} → ${move.toLabel}（${move.plain}）`, 20, 900, '#b45309');
+          } else {
+            out += svgText(46, panelY + 62, step.methodStage === 'done' ? '搬家完成，看新 faces。' : '準備把舊 faces 的點數搬到新 faces。', 19, 800, '#334155');
+          }
+          out += svgFaceArray(46, panelY + 95, '舊', step.oldFaces, move ? move.fromIndex : null);
+          out += svgText(462, panelY + 123, '→', 30, 900, '#475569', 'middle');
+          out += svgFaceArray(505, panelY + 95, step.methodStage === 'done' ? '新' : '形成中', step.partialFaces || step.newFaces, move ? move.toIndex : null);
+        } else if (step.method === 'up') {
+          const faces = step.oldFaces || (step.activeDice && step.dices[step.activeDice]);
+          const val = faces ? faces[0] : '?';
+          out += svgText(46, panelY + 36, 'up()：只讀 faces[0]，不改變骰子', 22, 900, '#1d4ed8');
+          out += svgFaceArray(46, panelY + 75, '目前', faces, 0);
+          out += svgText(46, panelY + 150, `faces[0] 是「上」，所以回傳 ${val}`, 21, 900, '#b45309');
+        }
+      }
+
+      svg.innerHTML = out;
+    }
+
+    function svgFaceArray(x, y, label, faces, activeIndex) {
+      if (!faces) return '';
+      let out = svgText(x, y + 20, `${label} faces`, 16, 800, '#334155');
+      const cellW = 54;
+      for (let i = 0; i < 6; i++) {
+        const cx = x + 92 + i * (cellW + 5);
+        const fill = i === activeIndex ? '#fde68a' : (faces[i] === null || faces[i] === undefined ? '#ffffff' : '#dcfce7');
+        const stroke = i === activeIndex ? '#f59e0b' : '#94a3b8';
+        out += `<rect x="${cx}" y="${y}" width="${cellW}" height="52" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="2"/>`;
+        out += svgText(cx + cellW / 2, y + 16, faceLabels[i], 12, 800, '#64748b', 'middle');
+        out += svgText(cx + cellW / 2, y + 35, faceValueText(faces[i]), 19, 900, '#111827', 'middle');
+      }
+      return out;
+    }
+
+    function methodName(method) {
+      if (method === 'front') return 'roll_front()';
+      if (method === 'right') return 'roll_right()';
+      if (method === 'swap') return '交換 Dice';
+      if (method === 'up') return 'up()';
+      return '沒有';
+    }
+
+    function nextStep() {
+      if (stepIndex < steps.length - 1) {
+        stepIndex++;
+        renderStep();
+      } else {
+        stopPlay();
+      }
+    }
+
+    function prevStep() {
+      if (stepIndex > 0) {
+        stepIndex--;
+        renderStep();
+      }
+    }
+
+    function resetStep() {
+      stopPlay();
+      stepIndex = 0;
+      renderStep();
+    }
+
+    function startPlay() {
+      if (timer) return;
+      document.getElementById('playBtn').textContent = '暫停';
+      timer = setInterval(() => {
+        if (stepIndex >= steps.length - 1) {
+          stopPlay();
+          return;
+        }
+        nextStep();
+      }, Number(document.getElementById('speedSelect').value));
+    }
+
+    function stopPlay() {
+      if (timer) clearInterval(timer);
+      timer = null;
+      const btn = document.getElementById('playBtn');
+      if (btn) btn.textContent = '播放';
+    }
+
+    function togglePlay() {
+      if (timer) stopPlay();
+      else startPlay();
+    }
+
+    function setupEvents() {
+      document.getElementById('prevBtn').addEventListener('click', prevStep);
+      document.getElementById('nextBtn').addEventListener('click', nextStep);
+      document.getElementById('resetBtn').addEventListener('click', resetStep);
+      document.getElementById('playBtn').addEventListener('click', togglePlay);
+      document.getElementById('speedSelect').addEventListener('change', () => {
+        if (timer) { stopPlay(); startPlay(); }
+      });
+      document.getElementById('sampleSelect').addEventListener('change', (e) => initSample(Number(e.target.value)));
+      document.getElementById('replayThreeBtn').addEventListener('click', replayCurrentThreeRoll);
+      document.getElementById('resetThreeViewBtn').addEventListener('click', resetThreeView);
+
+      const modal = document.getElementById('problemModal');
+      document.getElementById('problemBtn').addEventListener('click', () => {
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+      });
+      document.getElementById('closeModalBtn').addEventListener('click', () => {
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+      });
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.classList.remove('open');
+          modal.setAttribute('aria-hidden', 'true');
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        const tag = (document.activeElement && document.activeElement.tagName || '').toLowerCase();
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+        if (e.key === 'ArrowRight') { e.preventDefault(); nextStep(); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); prevStep(); }
+        if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+      });
+
+      setupDivider();
+      window.addEventListener('resize', setToolbarHeight);
+    }
+
+    function setupDivider() {
+      const divider = document.getElementById('divider');
+      let dragging = false;
+      function move(clientX) {
+        const main = document.getElementById('main');
+        const rect = main.getBoundingClientRect();
+        const pct = ((clientX - rect.left) / rect.width) * 100;
+        const clamped = Math.min(76, Math.max(35, pct));
+        document.documentElement.style.setProperty('--left-w', `${clamped}%`);
+      }
+      divider.addEventListener('mousedown', (e) => { dragging = true; document.body.style.userSelect = 'none'; move(e.clientX); });
+      window.addEventListener('mousemove', (e) => { if (dragging) move(e.clientX); });
+      window.addEventListener('mouseup', () => { dragging = false; document.body.style.userSelect = ''; });
+      divider.addEventListener('touchstart', (e) => { dragging = true; move(e.touches[0].clientX); }, { passive: true });
+      window.addEventListener('touchmove', (e) => { if (dragging) move(e.touches[0].clientX); }, { passive: true });
+      window.addEventListener('touchend', () => { dragging = false; });
+    }
+
+    renderCode();
+    setupEvents();
+    initSample(0);
+  </script>
+</body>
+</html>
